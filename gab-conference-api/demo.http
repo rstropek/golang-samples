@@ -1,0 +1,13 @@
+GET http://localhost:8080/ping
+
+###
+GET http://localhost:8080/sessions
+
+###
+GET http://localhost:8080/sessions?full
+
+###
+GET http://localhost:8080/sessions/am-schauplatz-iot.md
+
+###
+GET http://localhost:8080/slots
