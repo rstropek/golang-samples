@@ -1,0 +1,18 @@
+# Abfragen aller Matchergebnisse
+GET http://localhost:8080/matches
+
+###
+# Abfrage eines Matchergebnisses
+GET http://localhost:8080/matches/2
+
+###
+# Einfügen eines Ergebnis
+# (p steht für Player, s steht für Score (=Anzahl Tore); Score muss zwischen 0 und 10 sein)
+POST http://localhost:8080/matches
+
+{
+    "p1": "Tom",
+    "p2": "Max",
+    "s1": 1,
+    "s2": 5
+}
