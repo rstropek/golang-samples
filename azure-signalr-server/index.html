@@ -28,26 +28,33 @@
             }
 
             function onConnected(connection) {
-                output.append('<li>Connection started</li>')
+                console.log('Connection started');
             }
 
             function onConnectionError(error) {
                 if (error && error.message) {
-                    output.append('<li>' + error.message + '</li>');
+                    console.log(error.message);
                 }
+
+                start();
             }
 
             var connection = new signalR.HubConnectionBuilder()
                                         .withUrl('/chat')
                                         .build();
             bindConnectionMessage(connection);
-            connection.start()
-                .then(function () {
-                    onConnected(connection);
-                })
-                .catch(function (error) {
-                    output.append('<li>' + error.message + '</li>');
-                });
+
+            function start() {
+                connection.start()
+                    .then(function () {
+                        onConnected(connection);
+                    })
+                    .catch(function (error) {
+                        output.append('<li>' + error.message + '</li>');
+                    });
+            }
+
+            start();
         });
     </script>
 </body>

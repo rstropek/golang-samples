@@ -34,7 +34,7 @@ var port *uint
 var serviceName *string
 var hubName *string
 var key *string
-var interval *uint
+var interval *int
 
 // Azure SignalR URLs for broadcasting and negotiating
 var broadcastURL string
@@ -46,7 +46,7 @@ func main() {
 	serviceName = flag.String("service-name", "mddd19", "Azure SignalR service name")
 	hubName = flag.String("hub-name", "mddd19", "Azure SignalR service name")
 	key = flag.String("key", "", "Azure SignalR access key")
-	interval = flag.Uint("interval", 2, "Seconds between broadcasting random values")
+	interval = flag.Int("interval", 2, "Seconds between broadcasting random values")
 
 	// Parse the command line
 	flag.Parse()
@@ -101,7 +101,7 @@ func negotiate(w http.ResponseWriter, r *http.Request) {
 
 // sendValues triggers the broadcasting of a value via SignalR to all connected clients
 func sendValues() {
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(time.Duration(*interval) * time.Second)
 	go func() {
 		for {
 			select {
