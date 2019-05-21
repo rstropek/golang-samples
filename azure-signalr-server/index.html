@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>SignalR Golang Demo</title>
+</head>
+<body>
+    <h1>SignalR Golang Demo</h1>
+
+    <ul id="output"></ul>
+
+    <!--Reference the JQuery and SignalR libraries -->
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@aspnet/signalr@1.1.0/dist/browser/signalr.min.js"></script>
+
+    <!--Add script to update the page and send messages.-->
+    <script type="text/javascript">
+        $(() => {
+            const output = $('#output');
+
+            function bindConnectionMessage(connection) {
+                connection.on('measurement', (value) => {
+                    output.append('<li>' + value + '</li>');
+                });
+                connection.onclose(onConnectionError);
+            }
+
+            function onConnected(connection) {
+                output.append('<li>Connection started</li>')
+            }
+
+            function onConnectionError(error) {
+                if (error && error.message) {
+                    output.append('<li>' + error.message + '</li>');
+                }
+            }
+
+            var connection = new signalR.HubConnectionBuilder()
+                                        .withUrl('/chat')
+                                        .build();
+            bindConnectionMessage(connection);
+            connection.start()
+                .then(function () {
+                    onConnected(connection);
+                })
+                .catch(function (error) {
+                    output.append('<li>' + error.message + '</li>');
+                });
+        });
+    </script>
+</body>
+
+</html>

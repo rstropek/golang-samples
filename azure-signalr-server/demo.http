@@ -1,0 +1,4 @@
+POST http://localhost:8081/negotiate
+
+###
+GET http://localhost:8081/
