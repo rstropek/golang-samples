@@ -1,2 +1,3 @@
 *.wasm
 *.exe
+wasm_exec.js

@@ -8,6 +8,24 @@
 				go.run(result.instance);
 			});
 		</script>
+		<script src="queens-problem-js-solver/qp.js"></script>
+		<script>
+			const t0 = performance.now();
+			const solutions = findSolution(new Uint8Array(64), 0, []);
+			const t1 = performance.now();
+			console.log(t1 - t0);
+			solutions.forEach(b => printBoard(b));
+			console.log(solutions.length);
+		</script>
 	</head>
-	<body></body>
+	<body>
+		<h1>Queens Problem</h1>
+
+		<form>
+			<div>
+				<label>Side length:</label>
+				<input type="number" />
+			</div>
+		</form>
+	</body>
 </html>

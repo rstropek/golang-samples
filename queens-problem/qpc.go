@@ -26,6 +26,8 @@ func elapsed(what string) func() {
 }
 
 func findAllSolutions() []ba.BitArray {
+	const sideLength = 12
+
 	defer elapsed("Finding all solutions for queens problem")()
-	return qpbas.FindSolution(ba.NewBitArray(8*8), 0, make([]ba.BitArray, 0))
+	return qpbas.FindSolutions(sideLength)
 }
