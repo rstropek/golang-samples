@@ -1,0 +1,1 @@
+docker run --rm -v C:\Users\r.stropek\go\src\github.com\rstropek\golang-samples\queens-problem\queens-problem-cpp-solver:/app -w /app trzeci/emscripten emcc qps.cpp -I/usr/include/x86_64-linux-gnu/c++/6/ -Wno-c++11-extensions -o qps.js

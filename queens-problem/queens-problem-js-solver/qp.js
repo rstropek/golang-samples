@@ -1,51 +1,51 @@
-function getIndex(x, y) {
-	return y*8 + x;
+function getIndex(x, y, sideLength) {
+	return y*sideLength + x;
 }
 
-function hasQueen(board, x, y) {
-    const result = board[getIndex(x, y)];
+function hasQueen(board, sideLength, x, y) {
+    const result = board[getIndex(x, y, sideLength)];
 	return result;
 }
 
-function tryPlaceQueen(board, x, y) {
-	if (x > 7 || y > 7) {
+function tryPlaceQueen(board, sideLength, x, y) {
+	if (x >= sideLength || y >= sideLength) {
 		return false;
 	}
 
-	if (hasQueen(board, x, y)) {
+	if (hasQueen(board, sideLength, x, y)) {
 		return false;
 	}
 
-	for (let i = 1; i < 8; i++) {
+	for (let i = 1; i < sideLength; i++) {
 		const [right, left, top, down] = [x+i, x-i, y-i, y+i];
-		const [rightInside, leftInside, topInside, downInside] = [right < 8, left >= 0, top >= 0, down < 8];
-		if ((rightInside && (hasQueen(board, right, y) || (topInside && hasQueen(board, right, top)) || (downInside && hasQueen(board, right, down)))) ||
-			(leftInside && (hasQueen(board, left, y) || (topInside && hasQueen(board, left, top)) || (downInside && hasQueen(board, left, down)))) ||
-			(topInside && hasQueen(board, x, top)) || (downInside && hasQueen(board, x, down))) {
+		const [rightInside, leftInside, topInside, downInside] = [right < sideLength, left >= 0, top >= 0, down < sideLength];
+		if ((rightInside && (hasQueen(board, sideLength, right, y) || (topInside && hasQueen(board, sideLength, right, top)) || (downInside && hasQueen(board, sideLength, right, down)))) ||
+			(leftInside && (hasQueen(board, sideLength, left, y) || (topInside && hasQueen(board, sideLength, left, top)) || (downInside && hasQueen(board, sideLength, left, down)))) ||
+			(topInside && hasQueen(board, sideLength, x, top)) || (downInside && hasQueen(board, sideLength, x, down))) {
 			return false;
 		}
 	}
 
-    board[getIndex(x, y)] = 1;
+    board[getIndex(x, y, sideLength)] = 1;
 	return true;
 }
 
-function removeQueen(board, x, y) {
-	if (x > 7 || y > 7) {
+function removeQueen(board, sideLength, x, y) {
+	if (x >= sideLength || y >= sideLength) {
 		return false;
 	}
 
-    board[getIndex(x, y)] = 0;
+    board[getIndex(x, y, sideLength)] = 0;
 	return true;
 }
 
-function printBoard(board) {
+function printBoard(board, sideLength) {
 	// board framing
 	var top, middle, bottom;
 	top = '┏';
 	middle = '┠';
 	bottom = '┗';
-	for (let j = 1; j < 8; j++) {
+	for (let j = 1; j < sideLength; j++) {
 		top += "━━┯";
 		middle += "──┼";
 		bottom += "━━┷";
@@ -55,20 +55,20 @@ function printBoard(board) {
 	bottom += "━━┛\n";
 
     let output = top;
-	for (let i = 0; i < 8; i++) {
+	for (let i = 0; i < sideLength; i++) {
 		output += '┃';
-		for (let j = 0; j < 8; j++) {
-			if (board[getIndex(j, i)]) {
+		for (let j = 0; j < sideLength; j++) {
+			if (board[getIndex(j, i, sideLength)]) {
 				output += '. ';
 			} else {
 				output += '  ';
 			}
-			if (j < 7) {
+			if (j < (sideLength - 1)) {
 				output += '│';
 			}
 		}
 		output += "┃\n";
-		if (i < 7) {
+		if (i < (sideLength - 1)) {
 			output += middle;
 		}
     }
@@ -76,18 +76,22 @@ function printBoard(board) {
     console.log(output);
 }
 
-function findSolution(board, x, solutions) {
-	for(let i = 0; i < 8; i++) {
-		if (tryPlaceQueen(board, x, i)) {
-			if (x == 7) {
+function findSolutions(board, sideLength, x, solutions) {
+	for(let i = 0; i < sideLength; i++) {
+		if (tryPlaceQueen(board, sideLength, x, i)) {
+			if (x == (sideLength - 1)) {
 				solutions.push(new Uint8Array(board));
-				removeQueen(board, x, i);
+				removeQueen(board, sideLength, x, i);
 			}
 
-			solutions = findSolution(board, x+1, solutions);
-			removeQueen(board, x, i);
+			solutions = findSolutions(board, sideLength, x+1, solutions);
+			removeQueen(board, sideLength, x, i);
 		}
 	}
 
 	return solutions;
+}
+
+function FindSolutions(sideLength) {
+	return findSolutions(new Uint8Array(sideLength * sideLength), sideLength, 0, []);
 }

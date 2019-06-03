@@ -11,10 +11,10 @@
 		<script src="queens-problem-js-solver/qp.js"></script>
 		<script>
 			const t0 = performance.now();
-			const solutions = findSolution(new Uint8Array(64), 0, []);
+			const solutions = FindSolutions(12);
 			const t1 = performance.now();
 			console.log(t1 - t0);
-			solutions.forEach(b => printBoard(b));
+			// solutions.forEach(b => printBoard(b));
 			console.log(solutions.length);
 		</script>
 	</head>
