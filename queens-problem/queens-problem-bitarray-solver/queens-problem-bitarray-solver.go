@@ -3,6 +3,7 @@ package queensproblembitarraysolver
 import (
 	"bytes"
 	"io"
+	"time"
 
 	ba "github.com/golang-collections/go-datastructures/bitarray"
 )
@@ -114,7 +115,18 @@ func findSolutions(board ba.BitArray, sideLength byte, x byte, solutions []ba.Bi
 	return solutions
 }
 
+// Result represents the result of the search for solutions to an n queens problem
+type Result struct {
+	Solutions       []ba.BitArray
+	CalculationTime time.Duration
+}
+
 // FindSolutions finds all solutions of the queens problem on a chess board with the given side length
-func FindSolutions(sideLength byte) []ba.BitArray {
-	return findSolutions(ba.NewBitArray((uint64)(sideLength*sideLength)), sideLength, 0, make([]ba.BitArray, 0))
+func FindSolutions(sideLength byte) Result {
+	start := time.Now()
+	solutions := findSolutions(ba.NewBitArray((uint64)(sideLength*sideLength)), sideLength, 0, make([]ba.BitArray, 0))
+	return Result{
+		Solutions:       solutions,
+		CalculationTime: time.Since(start),
+	}
 }
