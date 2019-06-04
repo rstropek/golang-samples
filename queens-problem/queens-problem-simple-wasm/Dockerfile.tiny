@@ -1,0 +1,27 @@
+# Use a multi-stage build
+FROM golang:latest AS builder
+
+RUN TEMP_DEB="$(mktemp)" \
+    && wget -O "$TEMP_DEB" 'https://github.com/tinygo-org/tinygo/releases/download/v0.6.0/tinygo_0.6.0_amd64.deb' \
+    && dpkg -i "$TEMP_DEB" \
+    && rm -f "$TEMP_DEB"
+
+ENV PATH=${PATH}:/usr/local/tinygo/bin
+
+# Install module for solving n queens problem
+RUN go get \
+    github.com/rstropek/golang-samples/queens-problem/queens-problem-bitarray-solver
+
+# Compile Go into exe
+WORKDIR /app
+COPY ./*.go ./
+RUN tinygo build -o qpsimplewasm.wasm -target wasm --no-debug qpsimplewasm.go
+
+FROM nginx:alpine
+
+# Copy exe from build container
+COPY --from=builder /app/qpsimplewasm.wasm /usr/share/nginx/html
+COPY --from=builder /usr/local/tinygo/targets/wasm_exec.js /usr/share/nginx/html
+COPY *.html /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/nginx.conf
+

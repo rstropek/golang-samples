@@ -82,6 +82,7 @@ function findSolutions(board, sideLength, x, solutions) {
 			if (x == (sideLength - 1)) {
 				solutions.push(new Uint8Array(board));
 				removeQueen(board, sideLength, x, i);
+				return solutions;
 			}
 
 			solutions = findSolutions(board, sideLength, x+1, solutions);
@@ -93,5 +94,10 @@ function findSolutions(board, sideLength, x, solutions) {
 }
 
 function FindSolutions(sideLength) {
-	return findSolutions(new Uint8Array(sideLength * sideLength), sideLength, 0, []);
+	const start = performance.now();
+	const solutions = findSolutions(new Uint8Array(sideLength * sideLength), sideLength, 0, []);
+	return {
+		solutions: solutions,
+		calculationTime: performance.now() - start,
+	}
 }

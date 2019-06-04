@@ -105,6 +105,7 @@ func findSolutions(board ba.BitArray, sideLength byte, x byte, solutions []ba.Bi
 			if x == (sideLength - 1) {
 				solutions = append(solutions, ba.NewBitArray((uint64)(sideLength*sideLength)).Or(board))
 				removeQueen(board, sideLength, x, i)
+				return solutions
 			}
 
 			solutions = findSolutions(board, sideLength, x+1, solutions)

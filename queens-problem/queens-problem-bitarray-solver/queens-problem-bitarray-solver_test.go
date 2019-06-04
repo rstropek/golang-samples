@@ -72,7 +72,7 @@ func TestTryPlaceDetectInvalidPosition(t *testing.T) {
 }
 
 func TestFindSolutions(t *testing.T) {
-	if solutions := FindSolutions(8); len(solutions) != 92 {
-		t.Errorf("Expected 92 solutions, got %d", len(solutions))
+	if solutions := FindSolutions(8); len(solutions.Solutions) != 92 {
+		t.Errorf("Expected 92 solutions, got %d", len(solutions.Solutions))
 	}
 }
