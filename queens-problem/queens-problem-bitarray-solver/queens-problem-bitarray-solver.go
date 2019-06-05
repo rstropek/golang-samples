@@ -9,15 +9,20 @@ import (
 )
 
 func getIndex(x byte, y byte, sideLength byte) uint64 {
+	// Note: No semicolons ;-)
 	return (uint64)(y*sideLength + x)
 }
 
 func hasQueen(board ba.BitArray, sideLength byte, x byte, y byte) bool {
+	// Note error handling here. Go has no exceptions.
+	// By convention, errors are the last return value and of type `error`
+	// (see https://gobyexample.com/errors)
 	result, _ := board.GetBit(getIndex(x, y, sideLength))
 	return result
 }
 
 func tryPlaceQueen(board ba.BitArray, sideLength byte, x byte, y byte) bool {
+	// Note: No parentheses ;-)
 	if x >= sideLength || y >= sideLength {
 		return false
 	}
@@ -29,6 +34,9 @@ func tryPlaceQueen(board ba.BitArray, sideLength byte, x byte, y byte) bool {
 	var i byte
 	for i = 1; i < sideLength; i++ {
 		// The following calculations consider byte overflow (0-1 becoming 255)
+
+		// Note declare-and-initialize syntax
+		// (see https://gobyexample.com/variables)
 		right, left, top, down := x+i, x-i, y-i, y+i
 		rightInside, leftInside, topInside, downInside := right < sideLength, left < sideLength, top < sideLength, down < sideLength
 		if (rightInside && (hasQueen(board, sideLength, right, y) || (topInside && hasQueen(board, sideLength, right, top)) || (downInside && hasQueen(board, sideLength, right, down)))) ||
@@ -55,6 +63,8 @@ func removeQueen(board ba.BitArray, sideLength byte, x byte, y byte) bool {
 func Print(board ba.BitArray, sideLength byte, w io.Writer) {
 	// Credits: Original code for this method see https://github.com/danrl/golibby/blob/9dd8757e94746578c5a9c0e4ca9d5a347fd7de32/queensboard/queensboard.go#L207
 	//          Under MIT license (https://github.com/danrl/golibby/blob/master/LICENSE)
+
+	// Note naming schema: Uppercase functions are exported, lowercase functions are local
 
 	// board framing
 	var top, middle, bottom bytes.Buffer
