@@ -70,3 +70,10 @@
   * `docker run -d --name go-web -p 8080:80 go-web`
   * `docker rm -f go-web`
   * Change `FROM alpine:latest` to `FROM scratch` and demo difference in size
+
+## Azure DevOps
+
+* Example: [05-simple-web-api](05-simple-web-api)
+* Code walkthrough:
+  * [azure-pipelines.yml](05-simple-web-api/azure-pipelines.yml)
+* Create *Azure DevOps Pipeline* and show building of GO app
