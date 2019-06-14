@@ -1,0 +1,10 @@
+GET http://localhost:8080/ping
+
+###
+GET http://localhost:8080/echo?msg=Hello%20World
+
+###
+GET http://localhost:8080/echo
+
+###
+GET http://localhost:8080/client/index.html

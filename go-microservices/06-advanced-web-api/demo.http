@@ -1,0 +1,43 @@
+# Test if API is running
+GET http://localhost:8080/ping
+
+###
+# Reset shopping cart (for testing purposes)
+POST http://localhost:8080/cart/reset
+
+###
+# Get items in shopping cart
+GET http://localhost:8080/cart
+
+###
+# Change quantity of cart item with ID 1 to 2
+POST http://localhost:8080/cart/quantities
+Content-Type: application/json
+
+[
+    {"id": 1, "quantity": 2},
+    {"id": 2, "prod": {"id": 99}, "quantity": 4}
+]
+
+###
+# Remove cart item by setting quantity to zero
+POST http://localhost:8080/cart/quantities
+Content-Type: application/json
+
+[
+    {"id": 1, "quantity": 0}
+]
+
+###
+# Apply valid coupon
+POST http://localhost:8080/cart/applyCoupon
+Content-Type: application/json
+
+{"coupon": "ABC-1234"}
+
+###
+# Apply invalid coupon
+POST http://localhost:8080/cart/applyCoupon
+Content-Type: application/json
+
+{"coupon": "DUMMY"}
