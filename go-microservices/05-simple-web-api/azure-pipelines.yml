@@ -22,6 +22,18 @@ steps:
   workingDirectory: '$(modulePath)/go-microservices/05-simple-web-api'
   displayName: 'go get dependencies'
 
-- script: go build -v .
+- script: go build -v -o ./web .
   workingDirectory: '$(modulePath)/go-microservices/05-simple-web-api'
   displayName: 'Build'
+
+- task: CopyFiles@2
+  inputs:
+    contents: './web'
+    targetFolder: $(Build.ArtifactStagingDirectory)
+  displayName: 'Copy artifacts to staging directory'
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    pathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    artifactName: drop
+  displayName: 'Publish build artifacts'
