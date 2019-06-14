@@ -1,6 +1,6 @@
 # Script
 
-## Hello Go
+## Hello Go!
 
 * Example: [01-hello-go](01-hello-go)
 * Code walkthrough [hello.go](01-hello-go/hello.go)
