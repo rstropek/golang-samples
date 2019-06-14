@@ -8,6 +8,8 @@ variables:
   modulePath: '$(GOPATH)/src/github.com/$(build.repository.name)' # Path to the module's code
 
 steps:
+# Setup GO environment; for details see
+# https://docs.microsoft.com/en-us/azure/devops/pipelines/languages/go?view=azure-devops#set-up-a-go-workspace
 - script: |
     mkdir -p '$(GOBIN)'
     mkdir -p '$(GOPATH)/pkg'
@@ -18,6 +20,7 @@ steps:
     echo '##vso[task.prependpath]$(GOROOT)/bin'
   displayName: 'Set up the Go workspace'
 
+# Note: GO Modules (https://blog.golang.org/using-go-modules) are out-of-scope of this demo
 - script: go get github.com/gorilla/mux
   workingDirectory: '$(modulePath)/go-microservices/05-simple-web-api'
   displayName: 'go get dependencies'
@@ -28,8 +31,10 @@ steps:
 
 - task: CopyFiles@2
   inputs:
-    contents: '$(modulePath)/go-microservices/05-simple-web-api/web'
+    SourceFolder: '$(modulePath)/go-microservices/05-simple-web-api'
+    contents: 'web'
     targetFolder: $(Build.ArtifactStagingDirectory)
+    flattenFolders: true
   displayName: 'Copy artifacts to staging directory'
 
 - task: PublishBuildArtifacts@1
