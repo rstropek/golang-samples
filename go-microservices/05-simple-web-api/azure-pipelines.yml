@@ -28,7 +28,7 @@ steps:
 
 - task: CopyFiles@2
   inputs:
-    contents: './web'
+    contents: '$(modulePath)/go-microservices/05-simple-web-api/web'
     targetFolder: $(Build.ArtifactStagingDirectory)
   displayName: 'Copy artifacts to staging directory'
 
