@@ -70,6 +70,9 @@
   * `docker run -d --name go-web -p 8080:80 go-web`
   * `docker rm -f go-web`
   * Change `FROM alpine:latest` to `FROM scratch` and demo difference in size
+  * `docker tag go-web rstropek/go-web`
+  * `docker push rstropek/go-web`
+  * Show GO web API running in *Azure Container Instance*
 
 ## Azure DevOps
 
