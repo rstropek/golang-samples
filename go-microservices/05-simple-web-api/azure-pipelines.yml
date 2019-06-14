@@ -19,9 +19,9 @@ steps:
   displayName: 'Set up the Go workspace'
 
 - script: go get github.com/gorilla/mux
-  workingDirectory: '$(modulePath)'
+  workingDirectory: '$(modulePath)/go-microservices/05-simple-web-api'
   displayName: 'go get dependencies'
 
 - script: go build -v .
-  workingDirectory: '$(modulePath)'
+  workingDirectory: '$(modulePath)/go-microservices/05-simple-web-api'
   displayName: 'Build'
