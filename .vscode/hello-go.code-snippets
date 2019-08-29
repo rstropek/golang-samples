@@ -1,0 +1,352 @@
+{
+	"01-module": {
+		"scope": "go",
+		"prefix": "go",
+		"body": [
+			"package main",
+			"",
+			"import (",
+			"\t\"fmt\"",
+			"",
+			"\t\"github.com/mbndr/figlet4go\"",
+			"\t\"rsc.io/quote\"",
+			")",
+			"",
+			"func main() {",
+			"\tascii := figlet4go.NewAsciiRender()",
+			"\trenderStr, _ := ascii.Render(quote.Hello())",
+			"",
+			"\tfmt.Print(renderStr)",
+			"}"
+		],
+		"description": "Go Module Demo"
+	},
+	"02-Dockerfile": {
+		"prefix": "go",
+		"body": [
+			"# Use a multi-stage build",
+			"FROM golang:latest AS builder",
+			"",
+			"# Compile Go into exe",
+			"WORKDIR /app",
+			"COPY . .",
+			"RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags=\"-s -w\" -a -o ./modules .",
+			"",
+			"FROM alpine:latest",
+			"RUN apk --no-cache add ca-certificates",
+			"",
+			"# Copy exe from build container",
+			"COPY --from=builder /app/modules ./",
+			"RUN chmod +x ./modules",
+			"",
+			"# Define start command",
+			"CMD [\"./modules\"]"
+		]
+	},
+	"02-dockerignore": {
+		"prefix": "go",
+		"body": [
+			"Dockerfile",
+			".dockerignore",
+			"modules",
+			"modules.exe"
+		]
+	},
+	"03-structs": {
+		"scope": "go",
+		"prefix": "go",
+		"body": [
+			"package main",
+			"",
+			"import \"fmt\"",
+			"",
+			"type Point struct {",
+			"\tX float64",
+			"\tY float64",
+			"}",
+			"",
+			"type Rect struct {",
+			"\tLeftUpper, RightLower Point",
+			"}",
+			"",
+			"type Circle struct {",
+			"\tCenter Point",
+			"\tRadius float64",
+			"}",
+			"",
+			"func main() {",
+			"\tp := Point{X: 10, Y: 20}",
+			"\tr := Rect{LeftUpper: Point{X: 0, Y: 0}, RightLower: Point{X: 10, Y: 10}}",
+			"\tc := Circle{Center: Point{X: 5, Y: 5}, Radius: 5}",
+			"",
+			"\tfmt.Printf(\"%f, %f, %f\\n\", p.X, r.LeftUpper.X, c.Center.X)",
+			"}",
+			""
+		]
+	},
+	"04-json-struct": {
+		"scope": "go",
+		"prefix": "go",
+		"body": [
+			"type Point struct {",
+			"\tX float64 `json:\"x\"`",
+			"\tY float64 `json:\"y\"`",
+			"}"
+		]
+	},
+	"05-json-print": {
+		"scope": "go",
+		"prefix": "go",
+		"body": [
+			"j, _ := json.Marshal(p)",
+			"fmt.Println(string(j))"
+		]
+	},
+	"06-functions": {
+		"scope": "go",
+		"prefix": "go",
+		"body": [
+			"func (r Rect) Width() float64 {",
+			"\treturn r.RightLower.X - r.LeftUpper.X",
+			"}",
+			"",
+			"func (r Rect) Height() float64 {",
+			"\treturn r.RightLower.Y - r.LeftUpper.Y",
+			"}",
+			"",
+			"func (r Rect) Area() float64 {",
+			"\treturn float64(r.Width() * r.Height())",
+			"}",
+			"",
+			"func (r *Rect) Enlarge(factor float64) {",
+			"\tr.RightLower.X = r.LeftUpper.X + r.Width()*factor",
+			"\tr.RightLower.Y = r.LeftUpper.Y + r.Height()*factor",
+			"}",
+			"",
+			"func (c Circle) Area() float64 {",
+			"\treturn math.Pi * c.Radius * c.Radius",
+			"}"
+		]
+	},
+	"06-functions-call": {
+		"scope": "go",
+		"prefix": "go",
+		"body": [
+			"r.Enlarge(2)",
+			"fmt.Printf(\"Rectangle's area after enlarging it is %f\\n\", r.Area())"
+		]
+	},
+	"07-interface": {
+		"scope": "go",
+		"prefix": "go",
+		"body": [
+			"type Shape interface {",
+			"\tArea() float64",
+			"}"
+		]
+	},
+	"07-interface-use": {
+		"scope": "go",
+		"prefix": "go",
+		"body": [
+			"shapes := []Shape{r, c}",
+			"for ix, shape := range shapes {",
+			"\tfmt.Printf(\"Area of shape %d (%T) is %f\\n\", ix, shape, shape.Area())",
+			"}"
+		]
+	},
+	"08-embedded-struct": {
+		"scope": "go",
+		"prefix": "go",
+		"body": [
+			"const (",
+			"\tWHITE int = 0xFFFFFF",
+			"\tRED   int = 0xFF0000",
+			"\tGREEN int = 0x00FF00",
+			"\tBLUE  int = 0x0000FF",
+			"\tBLACK int = 0x000000",
+			")",
+			"",
+			"type ColoredCircle struct {",
+			"\tCircle",
+			"\tColor int",
+			"}",
+			"",
+			"func (c ColoredCircle) GetColor() int {",
+			"\treturn c.Color",
+			"}",
+			"",
+			"type Colored interface {",
+			"\tGetColor() int",
+			"}"
+		]
+	},
+	"09-embedded-struct-use": {
+		"scope": "go",
+		"prefix": "go",
+		"body": [
+			"// Add colored circle above and add it to shapes",
+			"// cc := ColoredCircle{c, RED}",
+			"// fmt.Printf(\"Colored circle has radius %f\\n\", cc.Radius)",
+			"",
+			"if colCirc, ok := shape.(Colored); ok {",
+			"\tfmt.Printf(\"\\thas color %x\\n\", colCirc.GetColor())",
+			"}"
+		]
+	},
+	"10-pointers": {
+		"scope": "go",
+		"prefix": "go",
+		"body": [
+			"package main",
+			"",
+			"import \"fmt\"",
+			"",
+			"type person struct {",
+			"\tfirstName string",
+			"\tlastName string",
+			"}",
+			"",
+			"func main() {",
+			"\tx := 42",
+			"\tpx := &x",
+			"\tfmt.Printf(\"x is at address %v and it's value is %v\\n\", px, *px)",
+			"\t",
+			"\t*px *= 2",
+			"\tfmt.Printf(\"x is at address %v and it's value is %v\\n\", px, *px)",
+			"\t",
+			"\tpx = new(int)",
+			"\tfmt.Printf(\"x is at address %v and it's value is %v\\n\", px, *px)",
+			"",
+			"\tfunc(val *int) {",
+			"\t\t*val = 42",
+			"\t}(px)",
+			"\tfmt.Printf(\"x is at address %v and it's value is %v\\n\", px, *px)",
+			"\t",
+			"\tpp := &person{\"Foo\", \"Bar\"}",
+			"\tfmt.Printf(\"%s, %s\\n\", pp.lastName, pp.firstName)",
+			"\t",
+			"\tfunc(somebody *person) {",
+			"\t\tsomebody.firstName, somebody.lastName = somebody.lastName, somebody.firstName",
+			"\t}(pp)",
+			"\tfmt.Printf(\"%s, %s\\n\", pp.lastName, pp.firstName)",
+			"}"
+		]
+	},
+	"11-error-return": {
+		"scope": "go",
+		"prefix": "go",
+		"body": [
+			"package main",
+			"",
+			"import (",
+			"\t\"errors\"",
+			"\t\"fmt\"",
+			")",
+			"",
+			"func div(x int, y int) (int, error) {",
+			"\tif y == 0 {",
+			"\t\treturn -1, errors.New(\"Sorry, division by zero is not supported\")",
+			"\t}",
+			"",
+			"\treturn x / y, nil",
+			"}"
+		]
+	},
+	"12-error-handling": {
+		"scope": "go",
+		"prefix": "go",
+		"body": [
+			"func main() {",
+			"\tresult, err := div(42, 0)",
+			"\tif err != nil {",
+			"\t\tfmt.Printf(\"Ups, something bad happened: %s\\n\", err)",
+			"\t\treturn",
+			"\t}",
+			"",
+			"\tfmt.Printf(\"The result is %d\\n\", result)",
+			"}"
+		]
+	},
+	"13-start-goroutine": {
+		"scope": "go",
+		"prefix": "go",
+		"body": [
+			"package main\r",
+			"\r",
+			"import (\r",
+			"\t\"fmt\"\r",
+			"\t\"time\"\r",
+			")\r",
+			"\r",
+			"func sayHello(source string) {\r",
+			"\tfmt.Printf(\"Hello World from %s!\\n\", source)\r",
+			"}\r",
+			"\r",
+			"func main() {\r",
+			"\tsayHello(\"direct call\")\r",
+			"\tgo sayHello(\"goroutine\")\r",
+			"\r",
+			"\ttime.Sleep(10 * time.Millisecond)\r",
+			"}\r"
+		]
+	},
+	"14-funcs-channels": {
+		"scope": "go",
+		"prefix": "go",
+		"body": [
+			"func getValueAsync(result chan int) {\r",
+			"\ttime.Sleep(10 * time.Millisecond)\r",
+			"\r",
+			"\tresult <- 42\r",
+			"}\r",
+			"\r",
+			"func doSomethingComplex(done chan bool) {\r",
+			"\ttime.Sleep(10 * time.Millisecond)\r",
+			"\r",
+			"\tdone <- true\r",
+			"}\r"
+		]
+	},
+	"15-call-channel": {
+		"scope": "go",
+		"prefix": "go",
+		"body": [
+			"result := make(chan int)\r",
+			"go getValueAsync(result)\r",
+			"fmt.Println(<-result)\r",
+			"\r",
+			"done := make(chan bool)\r",
+			"go doSomethingComplex(done)\r",
+			"<-done\r",
+			"fmt.Println(\"Complex operation is done\")\r"
+		]
+	},
+	"16-select-channel": {
+		"scope": "go",
+		"prefix": "go",
+		"body": [
+			"go getValueAsync(result)\r",
+			"select {\r",
+			"case m := <-result:\r",
+			"    fmt.Println(m)\r",
+			"case <-time.After(5 * time.Millisecond):\r",
+			"    fmt.Println(\"timed out\")\r",
+			"}\r"
+		]
+	},
+	"17-stdlib-channel": {
+		"prefix": "go",
+		"body": [
+			"ticker := time.NewTicker(100 * time.Millisecond)\r",
+			"go func() {\r",
+			"    for range ticker.C {\r",
+			"        fmt.Println(\"Tick\")\r",
+			"    }\r",
+			"}()\r",
+			"<-time.After(500 * time.Millisecond)\r",
+			"ticker.Stop()\r"
+		],
+		"description": ""
+	}
+}
