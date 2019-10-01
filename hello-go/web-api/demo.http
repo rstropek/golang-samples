@@ -1,0 +1,21 @@
+# Get all meals
+GET http://localhost:8080/meals
+
+###
+# Get all orders
+GET http://localhost:8080/lunchOrders
+
+###
+# Get orders of a person
+GET http://localhost:8080/lunchOrders?person=Max
+
+###
+# Add an order
+POST http://localhost:8080/lunchOrders
+
+{
+    "day": 0,
+    "person": "Max",
+    "mealId": 1,
+    "notes": "Make it big, I am hungry"
+}
