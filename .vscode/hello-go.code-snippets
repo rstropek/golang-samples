@@ -348,5 +348,54 @@
 			"ticker.Stop()\r"
 		],
 		"description": ""
+	},
+	"18-cinterop-puts": {
+		"prefix": "go",
+		"body": [
+			"package main\r",
+			"\r",
+			"// #include <stdio.h>\r",
+			"// #include <stdlib.h>\r",
+			"import \"C\"\r",
+			"\r",
+			"import (\r",
+			"\t\"unsafe\"\r",
+			")\r",
+			"\r",
+			"func main() {\r",
+			"\tgreeting := C.CString(\"Hello World\")\r",
+			"\tdefer C.free(unsafe.Pointer(greeting))\r",
+			"\tC.puts(greeting)\r",
+			"}\r",
+			""
+		],
+		"description": ""
+	},
+	"19-cinterop-queens": {
+		"prefix": "go",
+		"body": [
+			"package main\r",
+			"\r",
+			"// #include <stdio.h>\r",
+			"// #include <stdlib.h>\r",
+			"// #include \"qps.h\"\r",
+			"import \"C\"\r",
+			"\r",
+			"import (\r",
+			"\t\"fmt\"\r",
+			"\t\"unsafe\"\r",
+			")\r",
+			"\r",
+			"func main() {\r",
+			"\tnumberOfSolutions := C.calculateNumberOfSolutions(8)\r",
+			"\tfmt.Printf(\"We have found %d solutions\\n\", numberOfSolutions)\r",
+			"\r",
+			"\tgreeting := C.CString(\"Hello World\")\r",
+			"\tdefer C.free(unsafe.Pointer(greeting))\r",
+			"\tC.puts(greeting)\r",
+			"}\r",
+			""
+		],
+		"description": ""
 	}
 }

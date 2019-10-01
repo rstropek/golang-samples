@@ -46,7 +46,7 @@ REM Switch to „FROM scratch“ (no RUN) and build/run again
 REM Check image size
 docker images hello-go
 
-##REM IN wasm FOLDER
+REM IN wasm FOLDER
 
 REM Cross-compile to WASM
 set GOOS=js
@@ -68,3 +68,7 @@ docker build -t qpsimplewasm .
 docker run -d -p 8080:80 --name qpsimplewasm qpsimplewasm
 start http://localhost:8080
 docker rm -f qpsimplewasm
+
+REM In c-interop folder...
+docker run --rm -v C:\Code\GitHub\golang-samples\hello-go\c-interop:/app -w /app golang go build .
+bash -c ./app
