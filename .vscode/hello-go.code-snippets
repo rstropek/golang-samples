@@ -346,8 +346,7 @@
 			"}()\r",
 			"<-time.After(500 * time.Millisecond)\r",
 			"ticker.Stop()\r"
-		],
-		"description": ""
+		]
 	},
 	"18-cinterop-puts": {
 		"prefix": "go",
@@ -368,8 +367,7 @@
 			"\tC.puts(greeting)\r",
 			"}\r",
 			""
-		],
-		"description": ""
+		]
 	},
 	"19-cinterop-queens": {
 		"prefix": "go",
@@ -395,7 +393,56 @@
 			"\tC.puts(greeting)\r",
 			"}\r",
 			""
-		],
-		"description": ""
-	}
+		]
+	},
+	"20-simple-api": {
+        "prefix": "go",
+        "body": [
+            "package main\r",
+            "\r",
+            "import (\r",
+            "\t\"encoding/json\"\r",
+            "\t\"fmt\"\r",
+            "\t\"log\"\r",
+            "\t\"net/http\"\r",
+            "\r",
+            "\t\"github.com/gorilla/mux\"\r",
+            ")\r",
+            "\r",
+            "type response struct {\r",
+            "\tAnswer   uint64 `json:\"answer,omitempty\"`\r",
+            "\tGreeting string `json:\"greeting\"`\r",
+            "}\r",
+            "\r",
+            "// our main function\r",
+            "func main() {\r",
+            "\tvar port uint16 = 8080\r",
+            "\r",
+            "\t// Setup a simple router\r",
+            "\trouter := mux.NewRouter()\r",
+            "\r",
+            "\t// Setup handler function\r",
+            "\trouter.HandleFunc(\"/greet\", greet).Methods(\"GET\")\r",
+            "\r",
+            "\t// Start server\r",
+            "\tfmt.Printf(\"Server starting, will listen to port %d...\\n\", port)\r",
+            "\tlog.Fatal(http.ListenAndServe(fmt.Sprintf(\":%d\", port), router))\r",
+            "}\r",
+            "\r",
+            "func greet(w http.ResponseWriter, r *http.Request) {\r",
+            "\t// Check query string if answer has been requested\r",
+            "\tanswerRequested := len(r.URL.Query().Get(\"withAnswer\")) != 0\r",
+            "\r",
+            "\t// Build response object\r",
+            "\tresp := response{Greeting: \"Hello World\"}\r",
+            "\tif answerRequested {\r",
+            "\t\tresp.Answer = 42\r",
+            "\t}\r",
+            "\r",
+            "\t// Send back JSON\r",
+            "\tjson.NewEncoder(w).Encode(resp)\r",
+            "}\r",
+            ""
+        ]
+    }
 }
