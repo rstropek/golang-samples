@@ -112,7 +112,7 @@ func sendValues() {
 	}()
 }
 
-// sendValue broadcasta a message
+// sendValue broadcasts a message
 func sendValue() {
 	// Create JWT token for Azure SignalR
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
