@@ -1,0 +1,131 @@
+trigger:
+- master
+
+stages:
+- stage: 'BuildTest'
+  displayName: 'Build and Test'
+  variables:
+    GOVERSION: '1.13.5'   # Version of Go tools used for building and testing
+    CGO_ENABLED: '0'      # Disable cgo to get a static binary
+    GOOS: 'linux'
+    GOARCH: 'amd64'
+  jobs:
+  - job: BuildTestBackend
+    displayName: 'Build and Test Go Backend'
+    pool:
+      vmImage: 'Ubuntu 18.04'
+    steps:
+    - task: GoTool@0
+      inputs:
+        version: $(GOVERSION)
+      displayName: 'Install and select Go version $(GOVERSION)'
+
+    - script: |
+        # Get tools for converting Go's test reports
+        go get -u github.com/jstemmer/go-junit-report 2>&1
+        go get -u github.com/axw/gocov/gocov 2>&1
+        go get -u github.com/AlekSi/gocov-xml 2>&1
+
+        # Run Go tests and turn output into JUnit test result format
+        go test ./mathalgorithms -v -coverprofile=demo-coverage.txt -covermode count 2>&1 | $HOME/go/bin/go-junit-report > demo-report.xml
+        rc=${PIPESTATUS[0]} # Get result code of `go test`
+
+        # Convert coverage file into XML
+        $HOME/go/bin/gocov convert demo-coverage.txt > demo-coverage.json
+        $HOME/go/bin/gocov-xml < demo-coverage.json > demo-coverage.xml
+
+        # Check if `go test` had an error
+        if [ $rc -ne 0 ]; then
+          # Let script fail by writing to stderr
+          >&2 echo "Tests failed"
+        fi
+      displayName: 'Run unit tests and convert results'
+      failOnStderr: true
+
+    - task: Go@0
+      inputs:
+        command: 'build'
+        arguments: '-a -o demo'
+      displayName: 'Build Go app'
+
+    - publish: '$(Build.SourcesDirectory)/demo'
+      artifact: 'Executable'
+      displayName: 'Publish pipeline artifact'
+
+    - task: PublishTestResults@2
+      condition: always()
+      inputs:
+        testResultsFormat: 'JUnit'
+        testResultsFiles: '*report*.xml' 
+        searchFolder: '$(Build.SourcesDirectory)'
+      displayName: 'Publish test results'
+
+    - task: PublishCodeCoverageResults@1
+      condition: always()
+      inputs:
+        codeCoverageTool: 'Cobertura'
+        summaryFileLocation: '$(Build.SourcesDirectory)/demo-coverage.xml'
+      displayName: 'Publish code coverage results'
+
+- stage: PublishImage
+  displayName: 'Publish Docker Image'
+  jobs:
+  - job: PublishImage
+    displayName: 'Publish Docker Image'
+    pool:
+      vmImage: 'Ubuntu 18.04'
+    steps:
+    - download: current
+      artifact: Executable
+      displayName: 'Download pipeline artifact'
+
+    - task: CopyFiles@2
+      inputs:
+        sourceFolder: '$(Agent.BuildDirectory)/Executable'
+        CleanTargetFolder: false
+        Contents: demo
+        TargetFolder: '$(Build.SourcesDirectory)'
+      displayName: 'Copy executable to folder with Dockerfile'
+
+    - task: Docker@2
+      displayName: 'Login to Docker Hub'
+      inputs:
+        command: login
+        containerRegistry: 'Docker Hub'
+
+    - task: Docker@2
+      displayName: 'Build and Push Image'
+      inputs:
+        command: buildAndPush
+        repository: rstropek/demo
+        tags: |
+          latest
+          $(Build.BuildId)
+
+- stage: PublishToAzure
+  displayName: 'Publish App to Azure'
+  jobs:
+  - job: PublishToAzure
+    displayName: 'Publish App to Azure'
+    pool:
+      vmImage: 'Ubuntu 18.04'
+    steps:
+    - task: AzureResourceGroupDeployment@2
+      inputs:
+        azureSubscription: 'Azure'
+        action: 'Create Or Update Resource Group'
+        resourceGroupName: 'gophers-meetup-linz'
+        location: 'westeurope'
+        templateLocation: 'Linked artifact'
+        csmFile: 'azuredeploy.json'
+        overrideParameters: '-siteName gophers-meetup-app -demoAppImageVersion $(Build.BuildId)'
+        deploymentMode: 'Incremental'
+      displayName: 'Create or Update Azure Resource Group'
+
+    - script: |
+        curl --fail --max-time 15 https://gophers-meetup-app.azurewebsites.net/fib 2>&1
+        if [ $? -ne 0 ]; then
+          >&2 echo "Website not reachable"
+        fi
+      displayName: 'Try deployed web service'
+      failOnStderr: true

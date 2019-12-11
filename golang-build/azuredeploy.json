@@ -1,0 +1,70 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "siteName": {
+            "type": "string"
+        },
+        "demoAppImageVersion": {
+            "type": "string"
+        },
+        "servicePlanPricingTier": {
+            "type": "string",
+            "allowedValues": [
+                "F1",
+                "B1",
+                "S1"
+            ],
+            "defaultValue": "F1"
+        },
+        "servicePlanCapacity": {
+            "type": "int",
+            "defaultValue": 1,
+            "minValue": 1,
+            "maxValue": 3
+        },
+        "location": {
+            "type": "string",
+            "defaultValue": "[resourceGroup().location]"
+        }
+    },
+    "variables": {
+        "imageName": "rstropek/demo",
+        "servicePlanName": "[concat(parameters('siteName'), '-asp')]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Web/serverfarms",
+            "apiVersion": "2018-02-01",
+            "name": "[variables('servicePlanName')]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "name": "[variables('servicePlanName')]",
+                "workerSizeId": "1",
+                "reserved": true,
+                "numberOfWorkers": "1"
+            },
+            "sku": {
+                "name": "[parameters('servicePlanPricingTier')]",
+                "capacity": "[parameters('servicePlanCapacity')]"
+            },
+            "kind": "linux"
+        },
+        {
+            "type": "Microsoft.Web/sites",
+            "apiVersion": "2018-02-01",
+            "name": "[parameters('siteName')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[variables('servicePlanName')]"
+            ],
+            "properties": {
+                "siteConfig": {
+                    "linuxFxVersion": "[concat('DOCKER|',variables('imageName'),':',parameters('demoAppImageVersion'))]"
+                },
+                "name": "[parameters('siteName')]",
+                "serverFarmId": "[variables('servicePlanName')]"
+            }
+        }
+    ]
+}
