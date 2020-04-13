@@ -1,0 +1,6 @@
+port: ":5000"
+auth:
+  aud: "https://book-a-time.com/api"
+  iss: "https://rainerdemo.eu.auth0.com/"
+  oidcBaseURL: "https://rainerdemo.eu.auth0.com/"
+  debug: false
