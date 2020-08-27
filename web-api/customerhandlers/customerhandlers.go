@@ -12,15 +12,22 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+// ObjectResultWriter writes a given object to the HTTP response
+type ObjectResultWriter interface {
+	WriteObjectResult(w http.ResponseWriter, object interface{})
+}
+
 // CustomerHandlers represents functions handling HTTP requests for customers management web api
 type CustomerHandlers struct {
 	repo customerrepository.CustomerRepository
+	orw  ObjectResultWriter
 }
 
 // NewCustomerHandlers creates a customer handler object
-func NewCustomerHandlers(repo customerrepository.CustomerRepository) CustomerHandlers {
+func NewCustomerHandlers(repo customerrepository.CustomerRepository, orw ObjectResultWriter) CustomerHandlers {
 	return CustomerHandlers{
 		repo: repo,
+		orw:  orw,
 	}
 }
 
@@ -38,8 +45,7 @@ func (ch CustomerHandlers) GetCustomers(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Return all customers
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(custArray)
+	ch.orw.WriteObjectResult(w, custArray)
 }
 
 // GetCustomer returns a single customer based on a given customer ID
@@ -54,8 +60,7 @@ func (ch CustomerHandlers) GetCustomer(w http.ResponseWriter, r *http.Request) {
 	// Check if customer with given ID exists
 	if c, ok := ch.repo.GetCustomerByID(cid); ok {
 		// Return customer
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(c)
+		ch.orw.WriteObjectResult(w, c)
 		return
 	}
 
@@ -112,9 +117,8 @@ func (ch CustomerHandlers) AddCustomer(w http.ResponseWriter, r *http.Request) {
 
 	// Return customer
 	w.Header().Set("Location", fmt.Sprintf("/customers/%s", c.CustomerID))
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(c)
+	ch.orw.WriteObjectResult(w, c)
 }
 
 // DeleteCustomer deletes a customer based on a given ID
@@ -170,8 +174,7 @@ func (ch CustomerHandlers) PatchCustomer(w http.ResponseWriter, r *http.Request)
 
 	if cNew, ok := ch.repo.PatchCustomer(cid, c); ok {
 		// Return updated customer data
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(cNew)
+		ch.orw.WriteObjectResult(w, cNew)
 		return
 	}
 

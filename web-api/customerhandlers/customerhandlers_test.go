@@ -9,13 +9,20 @@ import (
     "testing"
 )
 
+type testResponseWriter struct {}
+
+func (r testResponseWriter) WriteObjectResult(w http.ResponseWriter, object interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(object)
+}
+
 func TestGetCustomers(t *testing.T) {
 	// Here we use the existing customer repository. In practice, you would probably
 	// use a mocking framework like https://github.com/stretchr/testify. However, proper
 	// mocking for unit tests is out of scope here.
 	repo := customerrepository.NewCustomerRepository()
 	repo.AddCustomer(customerrepository.Customer{CompanyName: "Foo Bar"})
-	ch := NewCustomerHandlers(repo)
+	ch := NewCustomerHandlers(repo, testResponseWriter{})
 
     // Create a request to pass to our handler
     req, _ := http.NewRequest("GET", "/", nil)

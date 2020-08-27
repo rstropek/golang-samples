@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"github.com/google/uuid"
 	"github.com/rstropek/golang-samples/web-api/customerhandlers"
 	"flag"
@@ -15,6 +16,12 @@ import (
 	"github.com/urfave/negroni"
 )
 
+type responseWriter struct {}
+
+func (r responseWriter) WriteObjectResult(w http.ResponseWriter, object interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(object)
+}
 
 func main() {
 	// Parse command-line arguments
@@ -34,7 +41,7 @@ func main() {
 	})
 
 	// Create handlers
-	ch := customerhandlers.NewCustomerHandlers(repo)
+	ch := customerhandlers.NewCustomerHandlers(repo, responseWriter{})
 
 	// Initialize a new Gorilla mux, then register the home function as
 	// the handler for the "/" URL pattern.

@@ -52,7 +52,7 @@ go run .
 GET http://localhost:4000/
 ```
 
-## Add Customer
+## Add Customer Struct
 
 * Add package for handling GUIDs and decimal values
 
@@ -1734,7 +1734,7 @@ func TestGetCustomers(t *testing.T) {
     rr := httptest.NewRecorder()
     handler := http.HandlerFunc(ch.GetCustomers)
 
-    // Our handlers satisfy http.Handler, so we can call their ServeHTTP method 
+    // Our handlers satisfy http.Handler, so we can call their ServeHTTP method
     // directly and pass in our Request and ResponseRecorder
     handler.ServeHTTP(rr, req)
 
@@ -1753,3 +1753,102 @@ func TestGetCustomers(t *testing.T) {
 ```
 
 * Try it: `go test .`
+
+## Centralize HTTP Response Building
+
+* Add interface for building JSON object results in *customerhandlers.go*
+
+```go
+// ...
+
+// ObjectResultWriter writes a given object to the HTTP response
+type ObjectResultWriter interface {
+    WriteObjectResult(w http.ResponseWriter, object interface{})
+}
+
+// CustomerHandlers represents functions handling HTTP requests for customers management web api
+type CustomerHandlers struct {
+    repo customerrepository.CustomerRepository
+    orw  ObjectResultWriter
+}
+
+// NewCustomerHandlers creates a customer handler object
+func NewCustomerHandlers(repo customerrepository.CustomerRepository, orw ObjectResultWriter) CustomerHandlers {
+    return CustomerHandlers{
+        repo: repo,
+        orw:  orw,
+    }
+}
+
+// ...
+
+// GetCustomers returns all customers
+func (ch CustomerHandlers) GetCustomers(w http.ResponseWriter, r *http.Request) {
+    // ...
+
+    // Return all customers
+    ch.orw.WriteObjectResult(w, custArray)
+}
+
+// ...
+
+// GetCustomer returns a single customer based on a given customer ID
+func (ch CustomerHandlers) GetCustomer(w http.ResponseWriter, r *http.Request) {
+    // ...
+
+    // Check if customer with given ID exists
+    if c, ok := ch.repo.GetCustomerByID(cid); ok {
+        // Return customer
+        ch.orw.WriteObjectResult(w, c)
+        return
+    }
+
+    // ...
+}
+
+// ...
+
+// AddCustomer adds a customer
+func (ch CustomerHandlers) AddCustomer(w http.ResponseWriter, r *http.Request) {
+    // ...
+
+    ch.orw.WriteObjectResult(w, c)
+}
+
+// ...
+
+// PatchCustomer patches a customer based on a given ID and new field values
+func (ch CustomerHandlers) PatchCustomer(w http.ResponseWriter, r *http.Request) {
+    // ...
+
+    if cNew, ok := ch.repo.PatchCustomer(cid, c); ok {
+        // Return updated customer data
+        ch.orw.WriteObjectResult(w, cNew)
+        return
+    }
+
+    // ...
+}
+```
+
+* Adjust *main.go*
+
+```go
+// ...
+
+type responseWriter struct {}
+
+func (r responseWriter) WriteObjectResult(w http.ResponseWriter, object interface{}) {
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(object)
+}
+
+func main() {
+    // ...
+
+    // Create handlers
+    ch := customerhandlers.NewCustomerHandlers(repo, responseWriter{})
+
+    // ...
+}
+```
