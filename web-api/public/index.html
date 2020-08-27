@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo Client</title>
+</head>
+<body>
+    <ul id="customers" />
+
+    <script>
+        (async () => {
+            const cElem = document.getElementById("customers");
+
+            let html = "";
+            const result = await fetch("/customers");
+            const custs = await result.json();
+            for (const c of custs) {
+                html += `<li>${c.customerName}</li>`;
+            }
+
+            cElem.innerHTML = html;
+        })();
+    </script>
+</body>
+</html>

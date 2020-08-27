@@ -1,0 +1,187 @@
+openapi: 3.0.0
+info:
+  title: Customer Management
+  description: This is a sample API for customer management
+  termsOfService: https://my-events-demo.com/eula
+  contact:
+    name: API Support
+    url: https://my-events-demo.com/support
+    email: support@my-events-demo.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  version: 1.0.0
+servers:
+# Note the use of URL variables
+- url: http://localhost:{port}
+  description: The local test server
+  variables:
+    port:
+      description: Port on which the test server listens
+      default: '4000'
+paths:
+  /customers:
+    get:
+      operationId: GetCustomers
+      summary: Returns all customers
+      tags:
+      - Customers
+      description: Returns a list of all customers
+      responses:
+        '200':
+          description: A list of customers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/customer'
+    post:
+      operationId: AddCustomer
+      summary: Adds a customer
+      tags:
+      - Customers
+      requestBody:
+        description: Data of the new customer
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/newCustomer'
+      responses:
+        '201':
+          description: Added event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/customer'
+          headers:
+            Location:
+              description: URL where to get details of the created event
+              schema:
+                type: string
+          links:
+            event:
+              operationId: GetCustomer
+              parameters:
+                customerID: $response.body#/customerID
+        '400':
+          description: Invalid customer data in request body
+          content:
+            text/html:
+              schema:
+                type: string
+                description: Cause of the error
+                example: Company name must not be empty
+  /customers/{customerID}:
+    parameters:
+    - name: customerID
+      in: path
+      description: ID of the customer to load
+      required: true
+      schema:
+        type: string
+        pattern: '{id:[0-9A-Fa-f]{8}(?:-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}}'
+    get:
+      operationId: GetCustomer
+      summary: Returns a specific customer
+      tags:
+      - Customers
+      responses:
+        '200':
+          description: Customer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/customer'
+        '404':
+          $ref: '#/components/responses/notFoundResponse'
+    delete:
+      operationId: DeleteCustomer
+      summary: Delete a specific customer
+      tags:
+      - Customers
+      responses:
+        '204':
+          description: Customer deleted
+        '404':
+          $ref: '#/components/responses/notFoundResponse'
+    patch:
+      operationId: PatchCustomer
+      summary: Patch a specific customer
+      description: Only specify values in request body for those fields that you would like to update.
+      tags:
+      - Customers
+      requestBody:
+        description: Fields to patch
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/customerPatch'
+      responses:
+        '200':
+          description: Customer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/customer'
+        '404':
+          $ref: '#/components/responses/notFoundResponse'
+components:
+  responses:
+    notFoundResponse:
+      description: Item not found
+  schemas:
+    newCustomer:
+      type: object
+      required:
+      - customerName
+      - contactName
+      - country
+      - hourlyRate
+      properties:
+        customerName:
+          type: string
+          description: Name of the customer
+        contactName:
+          type: string
+          description: Name of the primary contact person of the customer
+        country:
+          type: string
+          minLength: 3
+          maxLength: 3
+          description: ISO 3166-1 alpha-3 country code
+        hourlyRate:
+          type: number
+          format: float
+          minimum: 1
+    customer:
+      allOf:
+      - $ref: '#/components/schemas/newCustomer'
+      - properties:
+          customerID:
+            type: string
+            format: uuid
+            description: Unique identifier of the customer
+            pattern: '{id:[0-9A-Fa-f]{8}(?:-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}}'
+    customerPatch:
+      type: object
+      properties:
+        customerID:
+          type: string
+          format: uuid
+          description: Unique identifier of the customer
+          pattern: '{id:[0-9A-Fa-f]{8}(?:-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}}'
+        customerName:
+          type: string
+          description: Name of the customer
+        contactName:
+          type: string
+          description: Name of the primary contact person of the customer
+        country:
+          type: string
+          description: ISO 3166-1 alpha-3 country code
+        hourlyRate:
+          type: number
+          format: float
