@@ -1,4 +1,4 @@
-package main
+package customerhandlers
 
 import (
 	"encoding/json"
@@ -12,8 +12,20 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-func getCustomers(w http.ResponseWriter, r *http.Request) {
-	custArray := repo.GetCustomersArray()
+// CustomerHandlers represents functions handling HTTP requests for customers management web api
+type CustomerHandlers struct {
+	repo customerrepository.CustomerRepository
+}
+
+// NewCustomerHandlers creates a customer handler object
+func NewCustomerHandlers(repo customerrepository.CustomerRepository) CustomerHandlers {
+	return CustomerHandlers{
+		repo: repo,
+	}
+}
+
+func (ch CustomerHandlers) GetCustomers(w http.ResponseWriter, r *http.Request) {
+	custArray := ch.repo.GetCustomersArray()
 	orderBy := r.FormValue("orderBy")
 	if len(orderBy) > 0 {
 		if orderBy != "companyName" {
@@ -29,7 +41,7 @@ func getCustomers(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(custArray)
 }
 
-func getCustomer(w http.ResponseWriter, r *http.Request) {
+func (ch CustomerHandlers) GetCustomer(w http.ResponseWriter, r *http.Request) {
 	// Get customer ID from path
 	cid, err := uuid.Parse(mux.Vars(r)["id"])
 	if err != nil {
@@ -38,7 +50,7 @@ func getCustomer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if customer with given ID exists
-	if c, ok := repo.GetCustomerByID(cid); ok {
+	if c, ok := ch.repo.GetCustomerByID(cid); ok {
 		// Return customer
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(c)
@@ -55,7 +67,7 @@ func newUUID() uuid.UUID {
 	return r
 }
 
-func addCustomer(w http.ResponseWriter, r *http.Request) {
+func (ch CustomerHandlers) AddCustomer(w http.ResponseWriter, r *http.Request) {
 	// Decode customer data from request body
 	var c = customerrepository.Customer{}
 	if json.NewDecoder(r.Body).Decode(&c) != nil {
@@ -93,7 +105,7 @@ func addCustomer(w http.ResponseWriter, r *http.Request) {
 	c.CustomerID = newUUID()
 
 	// Add customer to our list
-	repo.AddCustomer(c)
+	ch.repo.AddCustomer(c)
 
 	// Return customer
 	w.Header().Set("Location", fmt.Sprintf("/customers/%s", c.CustomerID))
@@ -102,7 +114,7 @@ func addCustomer(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(c)
 }
 
-func deleteCustomer(w http.ResponseWriter, r *http.Request) {
+func (ch CustomerHandlers) DeleteCustomer(w http.ResponseWriter, r *http.Request) {
 	// Get customer ID from path
 	cid, err := uuid.Parse(mux.Vars(r)["id"])
 	if err != nil {
@@ -111,7 +123,7 @@ func deleteCustomer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Delete customer
-	if repo.DeleteCustomerByID(cid) {
+	if ch.repo.DeleteCustomerByID(cid) {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
@@ -120,7 +132,7 @@ func deleteCustomer(w http.ResponseWriter, r *http.Request) {
 	http.NotFound(w, r)
 }
 
-func patchCustomer(w http.ResponseWriter, r *http.Request) {
+func (ch CustomerHandlers) PatchCustomer(w http.ResponseWriter, r *http.Request) {
 	// Get customer ID from path
 	cid, err := uuid.Parse(mux.Vars(r)["id"])
 	if err != nil {
@@ -151,7 +163,7 @@ func patchCustomer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if cNew, ok := repo.PatchCustomer(cid, c); ok {
+	if cNew, ok := ch.repo.PatchCustomer(cid, c); ok {
 		// Return updated customer data
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(cNew)

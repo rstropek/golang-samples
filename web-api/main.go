@@ -1,6 +1,8 @@
 package main
 
 import (
+	"github.com/google/uuid"
+	"github.com/rstropek/golang-samples/web-api/customerhandlers"
 	"flag"
 	"fmt"
 	"log"
@@ -13,15 +15,16 @@ import (
 	"github.com/urfave/negroni"
 )
 
-var repo = customerrepository.NewCustomerRepository()
 
 func main() {
 	// Parse command-line arguments
 	var portFlag = flag.Uint("p", 4000, "Port number for starting server")
 	flag.Parse()
+	
+	repo := customerrepository.NewCustomerRepository()
 
 	// Add one demo record
-	cid := newUUID()
+	cid, _ := uuid.NewUUID()
 	repo.AddCustomer(customerrepository.Customer{
 		CustomerID:  cid,
 		CompanyName: "Acme Corp",
@@ -30,16 +33,19 @@ func main() {
 		HourlyRate:  decimal.NewFromInt(42),
 	})
 
+	// Create handlers
+	ch := customerhandlers.NewCustomerHandlers(repo)
+
 	// Initialize a new Gorilla mux, then register the home function as
 	// the handler for the "/" URL pattern.
 	mux := mux.NewRouter()
 	mux.HandleFunc("/panic", func(w http.ResponseWriter, r *http.Request) { panic("Something really bad happened...") }).Methods("GET")
-	mux.HandleFunc("/customers", getCustomers).Methods("GET")
-	mux.HandleFunc("/customers", getCustomers).Queries("orderBy", "{orderBy}").Methods("GET")
-	mux.HandleFunc("/customers", addCustomer).Methods("POST")
-	mux.HandleFunc("/customers/{id:[0-9A-Fa-f]{8}(?:-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}}", getCustomer).Methods("GET")
-	mux.HandleFunc("/customers/{id:[0-9A-Fa-f]{8}(?:-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}}", deleteCustomer).Methods("DELETE")
-	mux.HandleFunc("/customers/{id:[0-9A-Fa-f]{8}(?:-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}}", patchCustomer).Methods("PATCH")
+	mux.HandleFunc("/customers", ch.GetCustomers).Methods("GET")
+	mux.HandleFunc("/customers", ch.GetCustomers).Queries("orderBy", "{orderBy}").Methods("GET")
+	mux.HandleFunc("/customers", ch.AddCustomer).Methods("POST")
+	mux.HandleFunc("/customers/{id:[0-9A-Fa-f]{8}(?:-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}}", ch.GetCustomer).Methods("GET")
+	mux.HandleFunc("/customers/{id:[0-9A-Fa-f]{8}(?:-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}}", ch.DeleteCustomer).Methods("DELETE")
+	mux.HandleFunc("/customers/{id:[0-9A-Fa-f]{8}(?:-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}}", ch.PatchCustomer).Methods("PATCH")
 
 	n := negroni.Classic()
 	n.UseHandler(mux)
