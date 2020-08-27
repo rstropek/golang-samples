@@ -8,11 +8,12 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"github.com/rstropek/golang-samples/web-api/customerrepository"
 	"github.com/shopspring/decimal"
 )
 
 func getCustomers(w http.ResponseWriter, r *http.Request) {
-	custArray := getCustomersArray()
+	custArray := repo.GetCustomersArray()
 	orderBy := r.FormValue("orderBy")
 	if len(orderBy) > 0 {
 		if orderBy != "companyName" {
@@ -20,7 +21,7 @@ func getCustomers(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		sort.Sort(byCompanyName(custArray))
+		sort.Sort(customerrepository.ByCompanyName(custArray))
 	}
 
 	// Return all customers
@@ -36,12 +37,8 @@ func getCustomer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Lock customers while accessing it
-	customersMutex.Lock()
-	defer customersMutex.Unlock()
-
 	// Check if customer with given ID exists
-	if c, ok := customers[cid]; ok {
+	if c, ok := repo.GetCustomerByID(cid); ok {
 		// Return customer
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(c)
@@ -60,7 +57,7 @@ func newUUID() uuid.UUID {
 
 func addCustomer(w http.ResponseWriter, r *http.Request) {
 	// Decode customer data from request body
-	var c = customer{}
+	var c = customerrepository.Customer{}
 	if json.NewDecoder(r.Body).Decode(&c) != nil {
 		http.Error(w, "Could not deserialize customer from HTTP body", http.StatusBadRequest)
 		return
@@ -95,12 +92,8 @@ func addCustomer(w http.ResponseWriter, r *http.Request) {
 	// Assign new customer ID
 	c.CustomerID = newUUID()
 
-	// Lock customers while accessing it
-	customersMutex.Lock()
-	defer customersMutex.Unlock()
-
 	// Add customer to our list
-	customers[c.CustomerID] = c
+	repo.AddCustomer(c)
 
 	// Return customer
 	w.Header().Set("Location", fmt.Sprintf("/customers/%s", c.CustomerID))
@@ -117,13 +110,8 @@ func deleteCustomer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Lock customers while accessing it
-	customersMutex.Lock()
-	defer customersMutex.Unlock()
-
-	// Check if customer with given ID exists
-	if _, ok := customers[cid]; ok {
-		delete(customers, cid)
+	// Delete customer
+	if repo.DeleteCustomerByID(cid) {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
@@ -141,7 +129,7 @@ func patchCustomer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Decode customer data from request body
-	var c = customer{}
+	var c = customerrepository.Customer{}
 	if json.NewDecoder(r.Body).Decode(&c) != nil {
 		http.Error(w, "Could not deserialize customer from HTTP body", http.StatusBadRequest)
 		return
@@ -153,44 +141,23 @@ func patchCustomer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Lock customers while accessing it
-	customersMutex.Lock()
-	defer customersMutex.Unlock()
+	if len(c.Country) > 0 && len(c.Country) != 3 {
+		http.Error(w, "Country name must be three characters long (use ISO 3166-1 Alpha-3 code)", http.StatusBadRequest)
+		return
+	}
 
-	// Check if customer with given ID exists
-	if cOld, ok := customers[cid]; ok {
-		// Update specified fields
-		if len(c.CompanyName) > 0 {
-			cOld.CompanyName = c.CompanyName
-		}
+	if c.HourlyRate != decimal.NewFromInt(0) && decimal.NewFromInt(0).GreaterThan(c.HourlyRate) {
+		http.Error(w, "Hourly rate must be >= 0", http.StatusBadRequest)
+		return
+	}
 
-		if len(c.ContactName) > 0 {
-			cOld.ContactName = c.ContactName
-		}
-
-		if len(c.Country) > 0 {
-			if len(c.Country) != 3 {
-				http.Error(w, "Country name must be three characters long (use ISO 3166-1 Alpha-3 code)", http.StatusBadRequest)
-				return
-			}
-
-			cOld.Country = c.Country
-		}
-
-		if c.HourlyRate != decimal.NewFromInt(0) {
-			if decimal.NewFromInt(0).GreaterThan(c.HourlyRate) {
-				http.Error(w, "Hourly rate must be >= 0", http.StatusBadRequest)
-				return
-			}
-
-			cOld.HourlyRate = c.HourlyRate
-		}
-
-		// Update customer in in-memory store
-		customers[cid] = cOld
-
+	if cNew, ok := repo.PatchCustomer(cid, c); ok {
 		// Return updated customer data
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(cOld)
+		json.NewEncoder(w).Encode(cNew)
+		return
 	}
+
+	// Customer hasn't been found
+	http.NotFound(w, r)
 }

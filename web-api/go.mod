@@ -7,5 +7,6 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/rs/cors v1.7.0
 	github.com/shopspring/decimal v1.2.0
+	github.com/stretchr/testify v1.6.1
 	github.com/urfave/negroni v1.0.0
 )

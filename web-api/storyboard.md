@@ -174,7 +174,12 @@ import (
 // Store map of customers in memory
 var customers = make(map[uuid.UUID]customer, 0)
 
-// Mutex serializing access to customers
+// Mutex serializing access to customers. We need this mutex because
+// go serves all incoming HTTP requests in their own goroutine. Therefore,
+// it is possible if not likely that handlers will run concurrently.
+// As concurrent reading without writing is allowed, we could optimize
+// our code using `RWMutex` (https://golang.org/pkg/sync/#RWMutex).
+// However, this is out of scope for this sample.
 var customersMutex = &sync.Mutex{}
 
 // ...
@@ -693,7 +698,7 @@ GET http://localhost:4000/panic
 
 ## Split Into Multiple Files
 
-* Create *customerRepository.go*
+* Create *customerrepository.go*
 
 ```go
 package main
@@ -998,3 +1003,447 @@ func main() {
     log.Fatal(err)
 }
 ```
+
+## Convert Customer Repository in Package
+
+* Create subfolder *customerrepository*
+
+* Move *customerrepository.go* into new folder
+
+* Change code of *customerrepository.go*
+
+```go
+package customerrepository
+
+import (
+    "sync"
+
+    "github.com/google/uuid"
+    "github.com/shopspring/decimal"
+)
+
+// Customer holds data of a customer record
+type Customer struct {
+    CustomerID  uuid.UUID       `json:"customerID,omitempty"`
+    CompanyName string          `json:"customerName"`
+    ContactName string          `json:"contactName"`
+    Country     string          `json:"country"`
+    HourlyRate  decimal.Decimal `json:"hourlyRate"`
+}
+
+// CustomerRepository is an in-memory repository of customers
+type CustomerRepository struct {
+    // Store map of customers in memory
+    customers map[uuid.UUID]Customer
+
+    // Mutex serializing access to customers. We need this mutex because
+    // go serves all incoming HTTP requests in their own goroutine. Therefore,
+    // it is possible if not likely that handlers will run concurrently.
+    // As concurrent reading without writing is allowed, we could optimize
+    // our code using `RWMutex` (https://golang.org/pkg/sync/#RWMutex).
+    // However, this is out of scope for this sample.
+    customersMutex *sync.Mutex
+}
+
+// NewCustomerRepository creates a customer repository
+func NewCustomerRepository() CustomerRepository {
+    return CustomerRepository{
+        customers:      make(map[uuid.UUID]Customer, 0),
+        customersMutex: &sync.Mutex{},
+    }
+}
+
+// GetCustomerByID looks for a customer with a given ID
+func (cr CustomerRepository) GetCustomerByID(cid uuid.UUID) (*Customer, bool) {
+    // Lock customers while accessing it
+    cr.customersMutex.Lock()
+    defer cr.customersMutex.Unlock()
+
+    // Check if customer with given ID exists
+    if c, ok := cr.customers[cid]; ok {
+        return &c, true
+    }
+
+    return nil, false
+}
+
+// GetCustomersArray returns all stored customers as an array
+func (cr CustomerRepository) GetCustomersArray() []Customer {
+    // Lock customers while accessing it
+    cr.customersMutex.Lock()
+    defer cr.customersMutex.Unlock()
+
+    // Convert map of customers into array
+    values := make([]Customer, len(cr.customers))
+    i := 0
+    for _, v := range cr.customers {
+        values[i] = v
+        i++
+    }
+
+    return values
+}
+
+// AddCustomer adds a customer to the repository
+func (cr CustomerRepository) AddCustomer(c Customer) {
+    // Lock customers while accessing it
+    cr.customersMutex.Lock()
+    defer cr.customersMutex.Unlock()
+
+    // Add customer to our list
+    cr.customers[c.CustomerID] = c
+}
+
+// DeleteCustomerByID removes a customer with a given ID
+func (cr CustomerRepository) DeleteCustomerByID(cid uuid.UUID) bool {
+    // Lock customers while accessing it
+    cr.customersMutex.Lock()
+    defer cr.customersMutex.Unlock()
+
+    // Check if customer with given ID exists
+    if _, ok := cr.customers[cid]; ok {
+        delete(cr.customers, cid)
+        return true
+    }
+
+    return false
+}
+
+// PatchCustomer patches a customer with the given values
+func (cr CustomerRepository) PatchCustomer(cid uuid.UUID, c Customer) (*Customer, bool) {
+    // Lock customers while accessing it
+    cr.customersMutex.Lock()
+    defer cr.customersMutex.Unlock()
+
+    // Check if customer with given ID exists
+    if cOld, ok := cr.customers[cid]; ok {
+        // Update specified fields
+        if len(c.CompanyName) > 0 {
+            cOld.CompanyName = c.CompanyName
+        }
+
+        if len(c.ContactName) > 0 {
+            cOld.ContactName = c.ContactName
+        }
+
+        if len(c.Country) > 0 {
+            cOld.Country = c.Country
+        }
+
+        if c.HourlyRate != decimal.NewFromInt(0) {
+            cOld.HourlyRate = c.HourlyRate
+        }
+
+        // Update customer in in-memory store
+        cr.customers[cid] = cOld
+
+        return &cOld, true
+    }
+
+    return nil, false
+}
+
+// ByCompanyName is used for sorting customers by company name
+type ByCompanyName []Customer
+
+func (c ByCompanyName) Len() int           { return len(c) }
+func (c ByCompanyName) Swap(i, j int)      { c[i], c[j] = c[j], c[i] }
+func (c ByCompanyName) Less(i, j int) bool { return c[i].CompanyName < c[j].CompanyName }
+```
+
+* Adjust code in *handlers.go*
+
+```go
+package main
+
+import (
+    "encoding/json"
+    "fmt"
+    "net/http"
+    "sort"
+
+    "github.com/google/uuid"
+    "github.com/gorilla/mux"
+    "github.com/rstropek/golang-samples/web-api/customerrepository"
+    "github.com/shopspring/decimal"
+)
+
+func getCustomers(w http.ResponseWriter, r *http.Request) {
+    custArray := repo.GetCustomersArray()
+    orderBy := r.FormValue("orderBy")
+    if len(orderBy) > 0 {
+        if orderBy != "companyName" {
+            http.Error(w, "Currently, we can only order by companyName", http.StatusBadRequest)
+            return
+        }
+
+        sort.Sort(customerrepository.ByCompanyName(custArray))
+    }
+
+    // Return all customers
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(custArray)
+}
+
+func getCustomer(w http.ResponseWriter, r *http.Request) {
+    // Get customer ID from path
+    cid, err := uuid.Parse(mux.Vars(r)["id"])
+    if err != nil {
+        http.Error(w, "Invalid customer ID format", http.StatusBadRequest)
+        return
+    }
+
+    // Check if customer with given ID exists
+    if c, ok := repo.GetCustomerByID(cid); ok {
+        // Return customer
+        w.Header().Set("Content-Type", "application/json")
+        json.NewEncoder(w).Encode(c)
+        return
+    }
+
+    // Customer hasn't been found
+    http.NotFound(w, r)
+}
+
+// newUUID returns a new UUID and ignores potential errors
+func newUUID() uuid.UUID {
+    r, _ := uuid.NewUUID()
+    return r
+}
+
+func addCustomer(w http.ResponseWriter, r *http.Request) {
+    // Decode customer data from request body
+    var c = customerrepository.Customer{}
+    if json.NewDecoder(r.Body).Decode(&c) != nil {
+        http.Error(w, "Could not deserialize customer from HTTP body", http.StatusBadRequest)
+        return
+    }
+
+    // Make sure that incoming custer data is sane
+    if c.CustomerID != uuid.Nil {
+        http.Error(w, "CustomerID must be empty", http.StatusBadRequest)
+        return
+    }
+
+    if len(c.CompanyName) == 0 {
+        http.Error(w, "Company name must not be empty", http.StatusBadRequest)
+        return
+    }
+
+    if len(c.ContactName) == 0 {
+        http.Error(w, "Contact name must not be empty", http.StatusBadRequest)
+        return
+    }
+
+    if len(c.Country) != 3 {
+        http.Error(w, "Country name must be three characters long (use ISO 3166-1 Alpha-3 code)", http.StatusBadRequest)
+        return
+    }
+
+    if decimal.NewFromInt(0).GreaterThan(c.HourlyRate) {
+        http.Error(w, "Hourly rate must be >= 0", http.StatusBadRequest)
+        return
+    }
+
+    // Assign new customer ID
+    c.CustomerID = newUUID()
+
+    // Add customer to our list
+    repo.AddCustomer(c)
+
+    // Return customer
+    w.Header().Set("Location", fmt.Sprintf("/customers/%s", c.CustomerID))
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusCreated)
+    json.NewEncoder(w).Encode(c)
+}
+
+func deleteCustomer(w http.ResponseWriter, r *http.Request) {
+    // Get customer ID from path
+    cid, err := uuid.Parse(mux.Vars(r)["id"])
+    if err != nil {
+        http.Error(w, "Invalid customer ID format", http.StatusBadRequest)
+        return
+    }
+
+    // Delete customer
+    if repo.DeleteCustomerByID(cid) {
+        w.WriteHeader(http.StatusNoContent)
+        return
+    }
+
+    // Customer hasn't been found
+    http.NotFound(w, r)
+}
+
+func patchCustomer(w http.ResponseWriter, r *http.Request) {
+    // Get customer ID from path
+    cid, err := uuid.Parse(mux.Vars(r)["id"])
+    if err != nil {
+        http.Error(w, "Invalid customer ID format", http.StatusBadRequest)
+        return
+    }
+
+    // Decode customer data from request body
+    var c = customerrepository.Customer{}
+    if json.NewDecoder(r.Body).Decode(&c) != nil {
+        http.Error(w, "Could not deserialize customer from HTTP body", http.StatusBadRequest)
+        return
+    }
+
+    // If customer ID was specified, it must match the customer ID from path
+    if c.CustomerID != uuid.Nil && cid != c.CustomerID {
+        http.Error(w, "Cannot update customer ID", http.StatusBadRequest)
+        return
+    }
+
+    if len(c.Country) > 0 && len(c.Country) != 3 {
+        http.Error(w, "Country name must be three characters long (use ISO 3166-1 Alpha-3 code)", http.StatusBadRequest)
+        return
+    }
+
+    if c.HourlyRate != decimal.NewFromInt(0) && decimal.NewFromInt(0).GreaterThan(c.HourlyRate) {
+        http.Error(w, "Hourly rate must be >= 0", http.StatusBadRequest)
+        return
+    }
+
+    if cNew, ok := repo.PatchCustomer(cid, c); ok {
+        // Return updated customer data
+        w.Header().Set("Content-Type", "application/json")
+        json.NewEncoder(w).Encode(cNew)
+        return
+    }
+
+    // Customer hasn't been found
+    http.NotFound(w, r)
+}
+```
+
+* Adjust code in *main.go*
+
+```go
+package main
+
+import (
+    "flag"
+    "fmt"
+    "log"
+    "net/http"
+
+    "github.com/gorilla/mux"
+    "github.com/rs/cors"
+    "github.com/rstropek/golang-samples/web-api/customerrepository"
+    "github.com/shopspring/decimal"
+    "github.com/urfave/negroni"
+)
+
+var repo = customerrepository.NewCustomerRepository()
+
+func main() {
+    // Parse command-line arguments
+    var portFlag = flag.Uint("p", 4000, "Port number for starting server")
+    flag.Parse()
+
+    // Add one demo record
+    cid := newUUID()
+    repo.AddCustomer(customerrepository.Customer{
+        CustomerID:  cid,
+        CompanyName: "Acme Corp",
+        ContactName: "Foo Bar",
+        Country:     "DEU",
+        HourlyRate:  decimal.NewFromInt(42),
+    })
+
+    // Initialize a new Gorilla mux, then register the home function as
+    // the handler for the "/" URL pattern.
+    mux := mux.NewRouter()
+    mux.HandleFunc("/panic", func(w http.ResponseWriter, r *http.Request) { panic("Something really bad happened...") }).Methods("GET")
+    mux.HandleFunc("/customers", getCustomers).Methods("GET")
+    mux.HandleFunc("/customers", getCustomers).Queries("orderBy", "{orderBy}").Methods("GET")
+    mux.HandleFunc("/customers", addCustomer).Methods("POST")
+    mux.HandleFunc("/customers/{id:[0-9A-Fa-f]{8}(?:-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}}", getCustomer).Methods("GET")
+    mux.HandleFunc("/customers/{id:[0-9A-Fa-f]{8}(?:-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}}", deleteCustomer).Methods("DELETE")
+    mux.HandleFunc("/customers/{id:[0-9A-Fa-f]{8}(?:-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}}", patchCustomer).Methods("PATCH")
+
+    n := negroni.Classic()
+    n.UseHandler(mux)
+    n.Use(cors.AllowAll())
+
+    // Use the http.ListenAndServe() function to start a new web server.
+    log.Printf("Starting server on %d", *portFlag)
+    err := http.ListenAndServe(fmt.Sprintf(":%d", *portFlag), n)
+    log.Fatal(err)
+}
+```
+
+* Try it
+
+## Add Unit Tests For Customer Repository
+
+* Add *customerrepository_test.go*
+
+```go
+package customerrepository
+
+import (
+    "sort"
+    "testing"
+
+    "github.com/google/uuid"
+
+    "github.com/stretchr/testify/assert"
+)
+
+func TestAddCustomer(t *testing.T) {
+    cr := NewCustomerRepository()
+    cr.AddCustomer(Customer{})
+
+    assert.Equal(t, 1, len(cr.customers))
+}
+
+func TestGetCustomersArray(t *testing.T) {
+    cr := NewCustomerRepository()
+    cr.AddCustomer(Customer{})
+
+    assert.Equal(t, 1, len(cr.GetCustomersArray()))
+}
+
+func TestGetCustomerByID(t *testing.T) {
+    cr := NewCustomerRepository()
+    cr.AddCustomer(Customer{CustomerID: uuid.Nil})
+
+    _, ok := cr.GetCustomerByID(uuid.Nil)
+    assert.True(t, ok)
+}
+
+func TestDeleteCustomerByID(t *testing.T) {
+    cr := NewCustomerRepository()
+    cr.AddCustomer(Customer{CustomerID: uuid.Nil})
+
+    cr.DeleteCustomerByID(uuid.Nil)
+    assert.Equal(t, 0, len(cr.customers))
+}
+
+func TestPatchCustomer(t *testing.T) {
+    cr := NewCustomerRepository()
+    cr.AddCustomer(Customer{
+        CustomerID:  uuid.Nil,
+        CompanyName: "Acme Corp",
+    })
+
+    cr.PatchCustomer(uuid.Nil, Customer{CompanyName: "Foo Bar"})
+    assert.Equal(t, "Foo Bar", cr.customers[uuid.Nil].CompanyName)
+}
+
+func TestOrderByCompanyName(t *testing.T) {
+    cr := NewCustomerRepository()
+    cr.AddCustomer(Customer{CompanyName: "B"})
+    cr.AddCustomer(Customer{CompanyName: "A"})
+
+    c := cr.GetCustomersArray()
+    sort.Sort(ByCompanyName(c))
+    assert.Equal(t, "A", c[0].CompanyName)
+}
+```
+
+* Try it: `go test .`

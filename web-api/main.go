@@ -8,9 +8,12 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
+	"github.com/rstropek/golang-samples/web-api/customerrepository"
 	"github.com/shopspring/decimal"
 	"github.com/urfave/negroni"
 )
+
+var repo = customerrepository.NewCustomerRepository()
 
 func main() {
 	// Parse command-line arguments
@@ -19,13 +22,13 @@ func main() {
 
 	// Add one demo record
 	cid := newUUID()
-	customers[cid] = customer{
+	repo.AddCustomer(customerrepository.Customer{
 		CustomerID:  cid,
 		CompanyName: "Acme Corp",
 		ContactName: "Foo Bar",
 		Country:     "DEU",
 		HourlyRate:  decimal.NewFromInt(42),
-	}
+	})
 
 	// Initialize a new Gorilla mux, then register the home function as
 	// the handler for the "/" URL pattern.
