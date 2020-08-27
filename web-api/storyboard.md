@@ -1483,6 +1483,7 @@ func NewCustomerHandlers(repo customerrepository.CustomerRepository) CustomerHan
     }
 }
 
+// GetCustomers returns all customers
 func (ch CustomerHandlers) GetCustomers(w http.ResponseWriter, r *http.Request) {
     custArray := ch.repo.GetCustomersArray()
     orderBy := r.FormValue("orderBy")
@@ -1500,6 +1501,7 @@ func (ch CustomerHandlers) GetCustomers(w http.ResponseWriter, r *http.Request) 
     json.NewEncoder(w).Encode(custArray)
 }
 
+// GetCustomer returns a single customer based on a given customer ID
 func (ch CustomerHandlers) GetCustomer(w http.ResponseWriter, r *http.Request) {
     // Get customer ID from path
     cid, err := uuid.Parse(mux.Vars(r)["id"])
@@ -1526,6 +1528,7 @@ func newUUID() uuid.UUID {
     return r
 }
 
+// AddCustomer adds a customer
 func (ch CustomerHandlers) AddCustomer(w http.ResponseWriter, r *http.Request) {
     // Decode customer data from request body
     var c = customerrepository.Customer{}
@@ -1573,6 +1576,7 @@ func (ch CustomerHandlers) AddCustomer(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(c)
 }
 
+// DeleteCustomer deletes a customer based on a given ID
 func (ch CustomerHandlers) DeleteCustomer(w http.ResponseWriter, r *http.Request) {
     // Get customer ID from path
     cid, err := uuid.Parse(mux.Vars(r)["id"])
@@ -1591,6 +1595,7 @@ func (ch CustomerHandlers) DeleteCustomer(w http.ResponseWriter, r *http.Request
     http.NotFound(w, r)
 }
 
+// PatchCustomer patches a customer based on a given ID and new field values
 func (ch CustomerHandlers) PatchCustomer(w http.ResponseWriter, r *http.Request) {
     // Get customer ID from path
     cid, err := uuid.Parse(mux.Vars(r)["id"])
@@ -1697,3 +1702,54 @@ func main() {
     log.Fatal(err)
 }
 ```
+
+## Add Sample Unit Test for Customer API Handlers
+
+* Add *customerhandlers_test.go*
+
+```go
+package customerhandlers
+
+import (
+    "encoding/json"
+    "github.com/stretchr/testify/assert"
+    "github.com/rstropek/golang-samples/web-api/customerrepository"
+    "net/http"
+    "net/http/httptest"
+    "testing"
+)
+
+func TestGetCustomers(t *testing.T) {
+    // Here we use the existing customer repository. In practice, you would probably
+    // use a mocking framework like https://github.com/stretchr/testify. However, proper
+    // mocking for unit tests is out of scope here.
+    repo := customerrepository.NewCustomerRepository()
+    repo.AddCustomer(customerrepository.Customer{CompanyName: "Foo Bar"})
+    ch := NewCustomerHandlers(repo)
+
+    // Create a request to pass to our handler
+    req, _ := http.NewRequest("GET", "/", nil)
+
+    // Create a ResponseRecorder (which satisfies http.ResponseWriter) to record the response
+    rr := httptest.NewRecorder()
+    handler := http.HandlerFunc(ch.GetCustomers)
+
+    // Our handlers satisfy http.Handler, so we can call their ServeHTTP method 
+    // directly and pass in our Request and ResponseRecorder
+    handler.ServeHTTP(rr, req)
+
+    // Check the status code is what we expect.
+    assert.Equal(t, http.StatusOK, rr.Code)
+
+    // Check content type
+    assert.Equal(t, "application/json", rr.Header().Get("Content-Type"))
+
+    // Check the JSON result
+    result := make([]customerrepository.Customer, 0)
+    json.NewDecoder(rr.Body).Decode(&result)
+    assert.Equal(t, 1, len(result))
+    assert.Equal(t, "Foo Bar", result[0].CompanyName)
+}
+```
+
+* Try it: `go test .`

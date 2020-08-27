@@ -24,6 +24,7 @@ func NewCustomerHandlers(repo customerrepository.CustomerRepository) CustomerHan
 	}
 }
 
+// GetCustomers returns all customers
 func (ch CustomerHandlers) GetCustomers(w http.ResponseWriter, r *http.Request) {
 	custArray := ch.repo.GetCustomersArray()
 	orderBy := r.FormValue("orderBy")
@@ -41,6 +42,7 @@ func (ch CustomerHandlers) GetCustomers(w http.ResponseWriter, r *http.Request) 
 	json.NewEncoder(w).Encode(custArray)
 }
 
+// GetCustomer returns a single customer based on a given customer ID
 func (ch CustomerHandlers) GetCustomer(w http.ResponseWriter, r *http.Request) {
 	// Get customer ID from path
 	cid, err := uuid.Parse(mux.Vars(r)["id"])
@@ -67,6 +69,7 @@ func newUUID() uuid.UUID {
 	return r
 }
 
+// AddCustomer adds a customer
 func (ch CustomerHandlers) AddCustomer(w http.ResponseWriter, r *http.Request) {
 	// Decode customer data from request body
 	var c = customerrepository.Customer{}
@@ -114,6 +117,7 @@ func (ch CustomerHandlers) AddCustomer(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(c)
 }
 
+// DeleteCustomer deletes a customer based on a given ID
 func (ch CustomerHandlers) DeleteCustomer(w http.ResponseWriter, r *http.Request) {
 	// Get customer ID from path
 	cid, err := uuid.Parse(mux.Vars(r)["id"])
@@ -132,6 +136,7 @@ func (ch CustomerHandlers) DeleteCustomer(w http.ResponseWriter, r *http.Request
 	http.NotFound(w, r)
 }
 
+// PatchCustomer patches a customer based on a given ID and new field values
 func (ch CustomerHandlers) PatchCustomer(w http.ResponseWriter, r *http.Request) {
 	// Get customer ID from path
 	cid, err := uuid.Parse(mux.Vars(r)["id"])
