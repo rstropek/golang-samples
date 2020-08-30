@@ -1,6 +1,12 @@
 # Storyboard
 
+## Introduction
+
+Use this sample in Go trainings to introduce attendees to basic concepts of web API development in Go.
+
 ## Getting started
+
+> Goal: Create a basic web server returning JSON response.
 
 * Create empty directory *basicwebapi*
 
@@ -46,13 +52,23 @@ func main() {
 go run .
 ```
 
-* Test it
+* Test it (Tip: Use [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client) for that)
 
 ```http
 GET http://localhost:4000/
 ```
 
+* **Discussions**:
+  * What is a Go [`Handler`](https://golang.org/pkg/net/http/#Handler)
+  * Note that `ResponseWriter` is a [`io.Writer`](https://golang.org/pkg/io/#Writer)
+  * Note that `Request.Body` is a [`io.Reader`](https://golang.org/pkg/io/#Reader)
+* What is a *multiplexer* in general and what is [`ServeMux`](https://golang.org/pkg/net/http/#ServeMux)
+  * See also [*simple web server* sample](https://github.com/rstropek/golang-samples/tree/master/go-microservices#simple-web-server)
+* How to make the webserver gracefully shut down? See [*advanced web server* sample](https://github.com/rstropek/golang-samples/tree/master/go-microservices#advanced-web-server)
+
 ## Add Customer Struct
+
+> Goal: Add a struct and serialize it to JSON for getting a HTTP response body.
 
 * Add package for handling GUIDs and decimal values
 
@@ -61,7 +77,7 @@ go get github.com/google/uuid
 go get github.com/shopspring/decimal
 ```
 
-* Add customer struct
+* Add `customer` struct
 
 ```go
 // ...
@@ -111,6 +127,12 @@ func home(w http.ResponseWriter, r *http.Request) {
 GET http://localhost:4000/
 ```
 
+* **Discussions**:
+  * What are [*well-known struct tags*](https://github.com/golang/go/wiki/Well-known-struct-tags#list-of-well-known-struct-tags)
+  * `json.NewEncoder` takes a writer, i.e. we can use `http.ResponseWriter`
+  * See a functionally richer, simple API in [*simple web API* sample](https://github.com/rstropek/golang-samples/tree/master/go-microservices#simple-web-api)
+  * [Package web API in Docker image](https://github.com/rstropek/golang-samples/tree/master/go-microservices#docker-container)
+
 ## Add More Powerful Router
 
 * Add *Gorilla MUX* package
@@ -152,6 +174,9 @@ func main() {
 GET http://localhost:4000/
 ```
 
+* **Discussions**:
+  * There are [so many routers for Go](https://github.com/avelino/awesome-go#routers), we use [*gorilla/mux*](https://github.com/gorilla/mux)
+
 ## Store Customers in In-Memory Map
 
 * Remove `home` method
@@ -179,7 +204,8 @@ var customers = make(map[uuid.UUID]customer, 0)
 // it is possible if not likely that handlers will run concurrently.
 // As concurrent reading without writing is allowed, we could optimize
 // our code using `RWMutex` (https://golang.org/pkg/sync/#RWMutex).
-// However, this is out of scope for this sample.
+// However, this is out of scope for this sample. We will use RWMutex
+// in the next sample (Go-Kit).
 var customersMutex = &sync.Mutex{}
 
 // ...
@@ -223,6 +249,12 @@ func main() {
 }
 ```
 
+* **Discussions**:
+  * *Maps* [on *Go by example*](https://gobyexample.com/maps)
+  * [Mutexes on *Go by example*](https://gobyexample.com/mutexes)
+  * Sample for implementing a singleton repository with channels see [*advanced web API* sample](https://github.com/rstropek/golang-samples/tree/master/go-microservices#advanced-web-api)
+  * When to use mutexes, when channels?
+
 ## Command-Line Arguments
 
 ```go
@@ -261,6 +293,11 @@ func main() {
 ```
 
 * Test it: `go run . -p 8081`
+
+* **Discussions**:
+  * Command-line arguments [on *Go by Example*](https://gobyexample.com/command-line-arguments)
+  * Command-line flags [on *Go by Example*](https://gobyexample.com/command-line-flags)
+  * There are [so many packages for building CLIs](https://github.com/avelino/awesome-go#command-line)
 
 ## Get Single Customer
 
@@ -696,6 +733,9 @@ GET http://localhost:4000/panic
 
 * Try it by opening `http://localhost:4000/index.html` in your browser
 
+* **Discussions**:
+  * There are [so many packages for creating a HTTP middleware*](https://github.com/avelino/awesome-go#libraries-for-creating-http-middlewares)
+
 ## Split Into Multiple Files
 
 * Create *customerrepository.go*
@@ -1003,6 +1043,9 @@ func main() {
     log.Fatal(err)
 }
 ```
+
+* **Discussions**:
+  * Where to put business logic? Is e.g. validation logic of incoming requests at the right spot in the code above?
 
 ## Convert Customer Repository in Package
 
@@ -1378,6 +1421,9 @@ func main() {
 
 * Try it
 
+* **Discussions**:
+  * Recap basics about nested packages based on [simple modules sample](https://github.com/rstropek/golang-samples/tree/master/go-microservices#calculator)
+
 ## Add Unit Tests For Customer Repository
 
 * Add *customerrepository_test.go*
@@ -1447,6 +1493,9 @@ func TestOrderByCompanyName(t *testing.T) {
 ```
 
 * Try it: `go test .`
+
+* **Discussions**:
+  * Recap basics about unit testing based on [simple modules sample](https://github.com/rstropek/golang-samples/tree/master/go-microservices#calculator)
 
 ## Convert Customer API Handlers in Package
 
@@ -1753,6 +1802,9 @@ func TestGetCustomers(t *testing.T) {
 ```
 
 * Try it: `go test .`
+
+* **Discussions**:
+  * There are [so many packages for testing codebases](https://github.com/avelino/awesome-go#testing)
 
 ## Centralize HTTP Response Building
 
