@@ -2,6 +2,9 @@ package calculator
 
 import "testing"
 
+// Note: This samples show very basic unit tests without any supporting packges.
+// Consider packages like *testify* in practice (https://pkg.go.dev/github.com/stretchr/testify/assert?tab=doc).
+
 func TestAdd(t *testing.T) {
 	if result := Add(21, 21); result != 42 {
 		t.Errorf("Expected 42, got %d", result)

@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	// Note path relative to GOPATH here
-	"github.com/rstropek/golang-samples/go-microservices/02-modules/calculator"
+	"github.com/rstropek/golang-samples/go-microservices/modules/calculator"
 )
 
 func main() {
