@@ -1,0 +1,94 @@
+openapi: 3.0.0
+info:
+  description: ToDo list example
+  version: 0.1.0
+  title: ToDo list
+paths:
+  /api/toDoItems:
+    get:
+      summary: Gets a list of ToDo items
+      operationId: getItems
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToDoItems'
+    post:
+      summary: Adds a new ToDo item
+      operationId: addItem
+      requestBody:
+        description: Description of the ToDo item
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+      responses:
+        '201':
+          description: Created
+          headers:
+            Location:
+              description: URL where to retrieve the created ToDo item
+              schema: 
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToDoItem'
+  /api/toDoItems/{id}:
+    get:
+      summary: Gets a ToDo item
+      operationId: getItem
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The id of the ToDo item
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToDoItem'
+        '404':
+          description: ToDo item with specified id does not exist
+  /api/toDoItems/{id}/setDone:
+    post:
+      summary: Sets ToDo item to "done"
+      operationId: setItemDone
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The id of the ToDo item
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToDoItem'
+        '404':
+          description: ToDo item with specified id does not exist
+components:
+  schemas:
+    ToDoItem:
+      type: object
+      properties:
+        _id:
+          type: string
+        description:
+          type: string
+        done:
+          type: boolean
+    ToDoItems:
+      type: array
+      items:
+        $ref: '#/components/schemas/ToDoItem'
