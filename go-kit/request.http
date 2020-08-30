@@ -1,0 +1,37 @@
+# @name customers
+GET http://localhost:8080/customers
+
+###
+
+@customerID = {{customers.response.body.$[0].customerID}}
+
+GET http://localhost:8080/customers/{{customerID}}
+
+###
+GET http://localhost:8080/customers/00000000-0000-0000-0000-000000000000
+
+###
+POST http://localhost:8080/customers
+
+{
+    "customerName": "Acme Corp",
+    "contactName": "Foo Bar",
+    "country": "DEU",
+    "hourlyRate": 42
+}
+
+###
+DELETE http://localhost:8080/customers/{{customerID}}
+
+###
+PATCH http://localhost:8080/customers/{{customerID}}
+
+{
+    "customerName": "Acme Corp Ltd."
+}
+
+###
+GET http://localhost:8080/panic
+
+###
+GET http://localhost:8080/customers?orderBy=companyName
