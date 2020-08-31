@@ -30,6 +30,8 @@
 			"# Compile Go into exe",
 			"WORKDIR /app",
 			"COPY . .",
+			"# Note that linker flags -s -w: Omits symbol table and debug information",
+			"# Read more about compile flags at https://golang.org/cmd/go/#hdr-Compile_packages_and_dependencies",
 			"RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags=\"-s -w\" -a -o ./modules .",
 			"",
 			"FROM alpine:latest",
@@ -88,6 +90,7 @@
 		"scope": "go",
 		"prefix": "go",
 		"body": [
+			"// Note [*well-known struct tags*](https://github.com/golang/go/wiki/Well-known-struct-tags#list-of-well-known-struct-tags)",
 			"type Point struct {",
 			"\tX float64 `json:\"x\"`",
 			"\tY float64 `json:\"y\"`",
