@@ -271,6 +271,52 @@
 			"}"
 		]
 	},
+	"12b-panic": {
+		"scope": "go",
+		"prefix": "go",
+		"body": [
+			"func div(x int, y int) int {",
+			"\tif y == 0 {",
+			"\t\tfmt.Println(\"OMG, y is zero, this must NEVER happen, oviously a critical coding error\")",
+			"\t\tpanic(\"y == 0\")",
+			"\t}",
+			"",
+			"\treturn x / y",
+			"}"
+		]
+	},
+	"12c-defer": {
+		"scope": "go",
+		"prefix": "go",
+		"body": [
+		  "func repl() {",
+		  "\tdefer func() {",
+		  "\t\tif r := recover(); r != nil {",
+		  "\t\t\tfmt.Println(\"Oh, oh, something bad happend. Shutting down gracefully\")",
+		  "\t\t\tfmt.Println(r)",
+		  "\t\t}",
+		  "\t}()",
+		  "",
+		  "\treader := bufio.NewReader(os.Stdin)",
+		  "\tfor {",
+		  "\t\tfmt.Print(\"x: \")",
+		  "\t\txStr, _ := reader.ReadString('\\n')",
+		  "\t\tfmt.Print(\"y: \")",
+		  "\t\tyStr, _ := reader.ReadString('\\n')",
+		  "",
+		  "\t\tx, _ := strconv.Atoi(xStr[:1])",
+		  "\t\ty, _ := strconv.Atoi(yStr[:1])",
+		  "",
+		  "\t\tfmt.Printf(\"x / y = %d\\n\", div(x, y))",
+		  "\t}",
+		  "}",
+		  "",
+		  "func main() {",
+		  "\trepl()",
+		  "\tfmt.Println(\"Good bye\")",
+		  "}"
+		]
+	  },
 	"13-start-goroutine": {
 		"scope": "go",
 		"prefix": "go",
