@@ -26,7 +26,7 @@ func main() {
 	document.Get("body").Call("appendChild", p)
 
 	p = document.Call("createElement", "p")
-	p.Set("innerHTML", "See console log for calculation result")
+	p.Set("innerHTML", "Run the solver from console with `findSolutions(8)`")
 	document.Get("body").Call("appendChild", p)
 
 	c = make(chan bool)
