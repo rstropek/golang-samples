@@ -1,0 +1,17 @@
+@host = http://localhost:4000
+
+###
+# @name Healthcheck
+GET {{host}}/healthcheck
+
+###
+# @name CreateHero
+POST {{host}}/heroes
+
+###
+# @name ShowHero
+GET {{host}}/heroes/4711
+
+###
+# @name HeroNotFound
+GET {{host}}/heroes/-1
