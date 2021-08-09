@@ -8,6 +8,17 @@ GET {{host}}/healthcheck
 # @name CreateHero
 POST {{host}}/heroes
 
+{
+    "name": "Homelander",
+    "realName": "John",
+    "coolness": 9,
+    "tags": [
+      "The Boys",
+      "Evil"
+    ],
+    "canFly": "yes"
+}
+
 ###
 # @name ShowHero
 GET {{host}}/heroes/4711
@@ -15,3 +26,77 @@ GET {{host}}/heroes/4711
 ###
 # @name HeroNotFound
 GET {{host}}/heroes/-1
+
+###
+# @name RouteDoesNotExist
+GET {{host}}/dummy
+
+###
+# @name WrongHttpMethod
+POST {{host}}/healthcheck
+
+###
+# @name BadlyFormedJson1
+POST {{host}}/heroes
+
+<foo>bar</foo>
+
+###
+# @name BadlyFormedJson2
+POST {{host}}/heroes
+
+{ "name": "Homelander", }
+
+###
+# @name WrongCanFly
+POST {{host}}/heroes
+
+{
+    "name": "Homelander",
+    "canFly": "maybe"
+}
+
+###
+# @name MissingName
+POST {{host}}/heroes
+
+{
+    "realName": "John",
+    "coolness": 9,
+    "tags": [
+      "The Boys",
+      "Evil"
+    ],
+    "canFly": "yes"
+}
+
+###
+# @name InvalidCoolness
+POST {{host}}/heroes
+
+{
+    "name": "Homelander",
+    "realName": "John",
+    "coolness": 99,
+    "tags": [
+      "The Boys",
+      "Evil"
+    ],
+    "canFly": "yes"
+}
+
+###
+# @name DuplicateTags
+POST {{host}}/heroes
+
+{
+    "name": "Homelander",
+    "realName": "John",
+    "coolness": 9,
+    "tags": [
+      "The Boys",
+      "Evil",
+      "Evil"
+    ],
+    "canFly": "yes"
+}
