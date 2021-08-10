@@ -121,3 +121,5 @@ touch cmd/api/main.go
 * *main.go*: Replace creation of `http.Server` with *0270-add-negroni-middleware*
 * *healthcheck.go*: Add `crash` with *0280-add-crasher*
 * *routes.go*: Add route to simulate crash with *0290-add-crash-route*
+* `go run ./cmd/api`
+* Try some requests including *Crash*
