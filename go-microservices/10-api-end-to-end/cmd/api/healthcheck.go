@@ -18,3 +18,7 @@ func (app *application) healthcheckHandler(w http.ResponseWriter, r *http.Reques
 		app.serverErrorResponse(w, r, err)
 	}
 }
+
+func (app *application) crash(w http.ResponseWriter, r *http.Request) {
+	panic("Something bad happened!")
+}

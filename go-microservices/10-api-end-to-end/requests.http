@@ -100,3 +100,7 @@ POST {{host}}/heroes
     ],
     "canFly": "yes"
 }
+
+###
+# @name Crash
+GET {{host}}/crash

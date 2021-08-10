@@ -15,6 +15,7 @@ func (app *application) routes() *httprouter.Router {
     router.MethodNotAllowed = http.HandlerFunc(app.methodNotAllowedResponse)
 
     router.HandlerFunc(http.MethodGet, "/healthcheck", app.healthcheckHandler)
+    router.HandlerFunc(http.MethodGet, "/crash", app.crash)
     router.HandlerFunc(http.MethodPost, "/heroes", app.createHeroHandler)
     router.HandlerFunc(http.MethodGet, "/heroes/:id", app.showHeroHandler)
 

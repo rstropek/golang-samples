@@ -113,3 +113,11 @@ touch cmd/api/main.go
 * *cmd/api/heroes.go*: Add validation checks after `app.readJSON` with *0260-use-validations*
 * `go run ./cmd/api`
 * Try requests *MissingName*, *InvalidCoolness*, *DuplicateTags*
+
+## Middlewares
+
+* `go get github.com/urfave/negroni`
+* `go get github.com/rs/cors`
+* *main.go*: Replace creation of `http.Server` with *0270-add-negroni-middleware*
+* *healthcheck.go*: Add `crash` with *0280-add-crasher*
+* *routes.go*: Add route to simulate crash with *0290-add-crash-route*

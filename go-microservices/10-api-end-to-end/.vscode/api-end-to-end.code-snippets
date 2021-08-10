@@ -404,7 +404,7 @@
         "description": ""
     },
     "0170-MarshalJSON-CanFly": {
-        "prefix": "",
+        "prefix": "go",
         "body": [
             "package data",
             "",
@@ -671,22 +671,59 @@
     "0260-use-validations": {
         "prefix": "go",
         "body": [
-          "    // You could consider creating deep copies using JSON marshal,",
-          "    // ProtoBuf marshal, deepcopier, etc.",
-          "    hero := &data.Hero{",
-          "        Name:     input.Name,",
-          "        RealName: input.RealName,",
-          "        Coolness: input.Coolness,",
-          "        Tags:     input.Tags,",
-          "        CanFly:   input.CanFly,",
-          "    }",
-          "",
-          "    v := validator.New()",
-          "    if data.ValidateHero(v, hero); !v.Valid() {",
-          "        app.failedValidationResponse(w, r, v.Errors)",
-          "        return",
-          "    }"
+            "    // You could consider creating deep copies using JSON marshal,",
+            "    // ProtoBuf marshal, deepcopier, etc.",
+            "    hero := &data.Hero{",
+            "        Name:     input.Name,",
+            "        RealName: input.RealName,",
+            "        Coolness: input.Coolness,",
+            "        Tags:     input.Tags,",
+            "        CanFly:   input.CanFly,",
+            "    }",
+            "",
+            "    v := validator.New()",
+            "    if data.ValidateHero(v, hero); !v.Valid() {",
+            "        app.failedValidationResponse(w, r, v.Errors)",
+            "        return",
+            "    }"
         ],
         "description": ""
-      }
+    },
+    "0270-add-negroni-middleware": {
+        "prefix": "go",
+        "body": [
+            "    n := negroni.New()",
+            "    r := negroni.NewRecovery()",
+            "    r.PrintStack = false",
+            "    n.Use(r)",
+            "    n.Use(negroni.NewLogger())",
+            "    n.Use(cors.AllowAll())",
+            "    n.UseHandler(app.routes())",
+            "",
+            "    srv := &http.Server{",
+            "        Addr:         fmt.Sprintf(\":%d\", cfg.port),",
+            "        Handler:      n,",
+            "        IdleTimeout:  time.Minute,",
+            "        ReadTimeout:  10 * time.Second,",
+            "        WriteTimeout: 30 * time.Second,",
+            "    }"
+        ],
+        "description": ""
+    },
+    "0280-add-crasher": {
+        "prefix": "go",
+        "body": [
+            "func (app *application) crash(w http.ResponseWriter, r *http.Request) {",
+            "    panic(\"Something bad happened!\")",
+            "}"
+        ],
+        "description": ""
+    },
+    "0290-add-crash-route": {
+        "prefix": "go",
+        "body": [
+            "router.HandlerFunc(http.MethodGet, \"/crash\", app.crash)"
+        ],
+        "description": ""
+    }
 }
