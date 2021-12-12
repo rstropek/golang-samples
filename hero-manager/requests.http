@@ -1,0 +1,49 @@
+@host=http://localhost:4000
+
+###
+GET {{host}}/v1/healthcheck
+
+###
+POST {{host}}/v1/heroes
+
+{
+    "name": "Superman",
+    "firstSeen": "1935-01-01T00:00:00Z",
+    "canFly": true,
+    "realName": "Clark Kent",
+    "abilities": [ "super strong", "can disguise with glasses" ]
+}
+
+###
+GET {{host}}/v1/heroes/1
+
+###
+# Test error handling
+GET {{host}}/v1/somethingThatDoesNotExist
+
+###
+# Test error handling
+POST {{host}}/v1/healthcheck
+
+###
+POST {{host}}/v1/generate
+###
+
+###
+PUT {{host}}/v1/heroes/1
+
+{
+    "name": "Homelander",
+    "firstSeen": "2020-01-01T00:00:00Z",
+    "canFly": true,
+    "abilities": [ "super strong" ]
+}
+
+###
+DELETE {{host}}/v1/heroes/1
+
+###
+GET {{host}}/v1/heroes?name=Or&abilities=foo&page=1&page_size=3&sort=name
+
+###
+GET {{host}}/v1/heroes?page=2&page_size=3&sort=name

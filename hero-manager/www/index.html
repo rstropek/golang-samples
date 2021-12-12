@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>CORS Test</title>
+</head>
+<body>
+    
+</body>
+<script lang="JavaScript" >
+    fetch('http://localhost:4000/v1/healthcheck')
+        .then(response => response.json())
+        .then(data => console.log(data));
+</script>
+</html>
