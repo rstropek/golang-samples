@@ -1,10 +1,12 @@
 @host=http://localhost:4000
+@token=eyJ0eXAiOi...
 
 ###
 GET {{host}}/v1/healthcheck
 
 ###
 POST {{host}}/v1/heroes
+Authorization: Bearer {{token}}
 
 {
     "name": "Superman",
@@ -16,21 +18,25 @@ POST {{host}}/v1/heroes
 
 ###
 GET {{host}}/v1/heroes/1
+Authorization: Bearer {{token}}
 
 ###
 # Test error handling
 GET {{host}}/v1/somethingThatDoesNotExist
+Authorization: Bearer {{token}}
 
 ###
 # Test error handling
 POST {{host}}/v1/healthcheck
+Authorization: Bearer {{token}}
 
 ###
 POST {{host}}/v1/generate
-###
+Authorization: Bearer {{token}}
 
 ###
 PUT {{host}}/v1/heroes/1
+Authorization: Bearer {{token}}
 
 {
     "name": "Homelander",
@@ -41,9 +47,16 @@ PUT {{host}}/v1/heroes/1
 
 ###
 DELETE {{host}}/v1/heroes/1
+Authorization: Bearer {{token}}
 
 ###
 GET {{host}}/v1/heroes?name=Or&abilities=foo&page=1&page_size=3&sort=name
+Authorization: Bearer {{token}}
 
 ###
 GET {{host}}/v1/heroes?page=2&page_size=3&sort=name
+Authorization: Bearer {{token}}
+
+###
+GET {{host}}/v1/claims
+Authorization: Bearer {{token}}

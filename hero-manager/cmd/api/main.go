@@ -24,6 +24,9 @@ type config struct {
 		maxIdleConns int
 		maxIdleTime  string
 	}
+	azure struct {
+		tenantId string
+	}
 }
 
 type application struct {
@@ -41,6 +44,7 @@ func main() {
 	flag.IntVar(&cfg.db.maxOpenConns, "db-max-open-conns", 25, "PostgreSQL max open connections")
 	flag.IntVar(&cfg.db.maxIdleConns, "db-max-idle-conns", 25, "PostgreSQL max idle connections")
 	flag.StringVar(&cfg.db.maxIdleTime, "db-max-idle-time", "15m", "PostgreSQL max connection idle time")
+	flag.StringVar(&cfg.azure.tenantId, "azure-tenant", os.Getenv("AZURE_TENANT"), "AAD Tenant")
 	flag.Parse()
 
 	//logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
