@@ -37,7 +37,7 @@ func NewJwtMiddleware(azureTenantId string, requiredScopes []string) *jwtmiddlew
 		"RS256",
 		fmt.Sprintf("https://sts.windows.net/%s/", azureTenantId),
 		requiredScopes,
-		v.WithCustomClaims(customClaims))
+		v.WithCustomClaims(func () v.CustomClaims { return customClaims }))
 	return jwtmiddleware.New(jwtValidator.ValidateToken)
 }
 
