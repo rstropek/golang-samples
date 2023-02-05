@@ -1,6 +1,6 @@
 module heroes.rainerstropek.com
 
-go 1.18
+go 1.20
 
 require (
 	github.com/auth0/go-jwt-middleware/v2 v2.0.1
