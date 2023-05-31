@@ -1,0 +1,19 @@
+@host=localhost:8080
+#@host=cloudexperienceday-westeurope.f2c4fphzdgghbpd4.westeurope.azurecontainer.io:8080
+
+POST http://{{host}}/singlebyte
+
+###
+POST http://{{host}}/multibytes?len=100
+
+###
+POST http://{{host}}/proxy/westeurope
+Content-Type: application/json
+
+{
+    "url": "http://{{host}}/singlebyte",
+    "name": "SingleByte"
+}
+
+###
+POST http://{{host}}/flush

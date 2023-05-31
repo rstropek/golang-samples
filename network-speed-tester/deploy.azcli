@@ -1,0 +1,21 @@
+# az login
+# az account set --subscription "b33f0285-db27-4896-ac5c-df22004b0aba"
+
+RG=CloudExperienceDay
+INSTRUMENTATION_KEY=756af033-cded-43b9-9b97-bb67dd54234d
+IMAGE=rstropek/cloudexperienceday-server:1.3
+
+REGIONS=("westeurope" "northeurope" "germanywestcentral" "eastus")
+
+for REGION in "${REGIONS[@]}"
+do
+    az container delete --resource-group $RG --name cloudexperienceday-$REGION --yes --only-show-errors
+
+    az container create --resource-group $RG --name cloudexperienceday-$REGION \
+        --environment-variables INSTRUMENTATION_KEY=$INSTRUMENTATION_KEY REGION=$REGION \
+        --image $IMAGE \
+        --location $REGION \
+        --os-type Linux \
+        --ports 80 8080 --protocol TCP \
+        --dns-name-label cloudexperienceday-$REGION
+done
