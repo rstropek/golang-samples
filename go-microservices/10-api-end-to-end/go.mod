@@ -1,6 +1,6 @@
 module github.com/rstropek/golang-samples/api-end-to-end
 
-go 1.16
+go 1.21
 
 require (
 	github.com/julienschmidt/httprouter v1.3.0 // direct

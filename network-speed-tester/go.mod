@@ -1,6 +1,6 @@
 module github.com/rstropek/golang-samples/network-speed-tester
 
-go 1.20
+go 1.21
 
 require github.com/microsoft/ApplicationInsights-Go v0.4.4
 

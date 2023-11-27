@@ -1,6 +1,6 @@
 module github.com/rstropek/golang-samples/generics
 
-go 1.20
+go 1.21
 
 require (
 	github.com/samber/lo v1.21.0 // indirect

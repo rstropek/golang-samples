@@ -1,6 +1,6 @@
 module github.com/rstropek/golang-samples/go-microservices/advanced-web-api
 
-go 1.20
+go 1.21
 
 require (
 	github.com/gorilla/handlers v1.5.1

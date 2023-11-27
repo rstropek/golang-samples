@@ -1,3 +1,3 @@
 module github.com/rstropek/golang-samples/monte-carlo-pi
 
-go 1.15
+go 1.21

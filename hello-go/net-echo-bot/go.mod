@@ -1,3 +1,3 @@
 module github.com/rstropek/golang-samples/mini-http-server
 
-go 1.20
+go 1.21

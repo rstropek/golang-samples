@@ -1,6 +1,6 @@
 module rainerdemotfs-westeu.visualstudio.com/golang-build
 
-go 1.13
+go 1.21
 
 require (
 	github.com/gin-gonic/gin v1.5.0
