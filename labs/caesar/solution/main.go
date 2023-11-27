@@ -15,28 +15,28 @@ type Decryptor interface {
 	Decrypt(cypher string) (string, error)
 }
 
-type EncryptDecryptor interface {
+type EncryptorDecryptor interface {
 	Encryptor
 	Decryptor
 }
 
-type CaesarCipher struct {
+type caesarCipher struct {
 	shift int
 }
 
-func NewCaesarCipher(shift int) EncryptDecryptor {
-	return &CaesarCipher{shift: shift}
+func NewCaesarCipher(shift int) EncryptorDecryptor {
+	return &caesarCipher{shift: shift}
 }
 
-func (cc *CaesarCipher) Encrypt(plain string) (string, error) {
+func (cc *caesarCipher) Encrypt(plain string) (string, error) {
 	return cc.shiftText(plain, cc.shift)
 }
 
-func (cc *CaesarCipher) Decrypt(cipher string) (string, error) {
+func (cc *caesarCipher) Decrypt(cipher string) (string, error) {
 	return cc.shiftText(cipher, -cc.shift)
 }
 
-func (cc *CaesarCipher) shiftText(text string, shift int) (string, error) {
+func (cc *caesarCipher) shiftText(text string, shift int) (string, error) {
 	allowedChars := map[rune]bool{
 		' ':  true,
 		'.':  true,
@@ -44,8 +44,8 @@ func (cc *CaesarCipher) shiftText(text string, shift int) (string, error) {
 		'!':  true,
 		'?':  true,
 		'\'': true,
-		'-'	: true,
-		'\n'	: true,
+		'-':  true,
+		'\n': true,
 	}
 
 	var resultBuilder strings.Builder
