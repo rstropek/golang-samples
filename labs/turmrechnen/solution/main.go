@@ -16,22 +16,27 @@ func main() {
 	}
 	results := t.Calculate()
 
-	maxLength := getMaxLength(results)
+	maxLengthOldValue, maxLengthOperand := getMaxLength(results)
 
 	for _, r := range results {
-		fmt.Printf("%*d %c %d = %d\n", maxLength, r.OldValue, r.Operation, r.Operand, r.NewValue)
+		fmt.Printf("%*d %c %*d = %d\n", maxLengthOldValue, r.OldValue, r.Operation, -maxLengthOperand, r.Operand, r.NewValue)
 	}
 }
 
-func getMaxLength(results []turm.TurmIntermediateResult) int {
-	maxLength := 0
+func getMaxLength(results []turm.TurmIntermediateResult) (int, int) {
+	maxLengthOldValue := 0
+	maxLengthOperand := 0
 	for _, r := range results {
 		length := len(strconv.Itoa(r.OldValue))
-		if length > maxLength {
-			maxLength = length
+		if length > maxLengthOldValue {
+			maxLengthOldValue = length
+		}
+		length = len(strconv.Itoa(r.Operand))
+		if length > maxLengthOperand {
+			maxLengthOperand = length
 		}
 	}
-	return maxLength
+	return maxLengthOldValue, maxLengthOperand
 }
 
 func TurmFromArguments() (*turm.Turm, error) {
