@@ -21,6 +21,10 @@ func main() {
 	for _, r := range results {
 		fmt.Printf("%*d %c %*d = %d\n", maxLengthOldValue, r.OldValue, r.Operation, -maxLengthOperand, r.Operand, r.NewValue)
 	}
+
+	for r := range t.CalculateIterative() {
+		fmt.Printf("%*d %c %*d = %d\n", maxLengthOldValue, r.OldValue, r.Operation, -maxLengthOperand, r.Operand, r.NewValue)
+	}
 }
 
 func getMaxLength(results []turm.TurmIntermediateResult) (int, int) {

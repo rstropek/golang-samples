@@ -1,6 +1,9 @@
 package turm
 
-import "fmt"
+import (
+	"fmt"
+	"iter"
+)
 
 type Turm struct {
 	startValue int
@@ -41,4 +44,27 @@ func (t Turm) Calculate() []TurmIntermediateResult {
 	}
 
 	return results
+}
+
+func (t Turm) CalculateIterative() iter.Seq[TurmIntermediateResult] {
+	return func(yield func(TurmIntermediateResult) bool) {
+		value := t.startValue
+		for phase := 0; phase < 2; phase++ {
+			for i := 2; i <= t.height; i++ {
+				var r TurmIntermediateResult
+				switch phase {
+				case 0:
+					r = TurmIntermediateResult{value, '*', i, value * i}
+				case 1:
+					r = TurmIntermediateResult{value, '/', i, value / i}
+				}
+
+				if !yield(r) {
+					return
+				}
+
+				value = r.NewValue
+			}
+		}
+	}
 }
