@@ -24,6 +24,7 @@ func main() {
 
 	for r := range t.CalculateIterative() {
 		fmt.Printf("%*d %c %*d = %d\n", maxLengthOldValue, r.OldValue, r.Operation, -maxLengthOperand, r.Operand, r.NewValue)
+		break
 	}
 }
 
