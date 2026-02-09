@@ -29,14 +29,21 @@ func NewCaesarCipher(shift int) EncryptorDecryptor {
 }
 
 func (cc *caesarCipher) Encrypt(plain string) (string, error) {
+	// Encryption shifts every letter forward by cc.shift positions.
+	// Example with shift=3: 'A' -> 'D', 'x' -> 'a'
 	return cc.shiftText(plain, cc.shift)
 }
 
 func (cc *caesarCipher) Decrypt(cipher string) (string, error) {
+	// Decryption is the inverse operation: shift letters backward.
+	// Instead of implementing it separately, we reuse the same function with -shift.
 	return cc.shiftText(cipher, -cc.shift)
 }
 
 func (cc *caesarCipher) shiftText(text string, shift int) (string, error) {
+	// There are 26 letters in the Latin alphabet.
+	// Normalizing the shift makes sure values like 29 behave like 3, and negatives work too.
+	// After this, shift is always in the range 0..25.
 	shift = ((shift % 26) + 26) % 26
 
 	// A small allow-list to demonstrate using a map.
@@ -55,17 +62,27 @@ func (cc *caesarCipher) shiftText(text string, shift int) (string, error) {
 	}
 
 	var resultBuilder strings.Builder
+	// Pre-allocate roughly enough space (fast + simple for students).
 	resultBuilder.Grow(len(text))
 	for _, char := range text {
 		if char >= 'a' && char <= 'z' {
+			// Lowercase letter:
+			// 1) move to 0..25 by subtracting 'a'
+			// 2) add the shift
+			// 3) wrap around with %26
+			// 4) move back to 'a'..'z' by adding 'a'
 			resultBuilder.WriteRune(((char-'a'+rune(shift))%26 + 'a'))
 		} else if char >= 'A' && char <= 'Z' {
+			// Same logic for uppercase letters ('A'..'Z').
 			resultBuilder.WriteRune(((char-'A'+rune(shift))%26 + 'A'))
 		} else {
+			// For this exercise we only accept a small set of non-letters (see allow-list).
+			// Everything else is considered invalid input.
 			if !allowedChars[char] {
 				return "", fmt.Errorf("invalid character: %q", char)
 			}
 
+			// Allowed non-letters are copied unchanged.
 			resultBuilder.WriteRune(char)
 		}
 	}
