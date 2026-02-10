@@ -1,60 +1,103 @@
 package main
 
 import (
-    // Importing necessary packages
-	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"image"
 	"image/png"
-	"io"
-	"math"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"sync"
+	"time"
 
-	gim "github.com/ozankasikci/go-image-merge" // Importing a third-party package for image manipulation
+	gim "github.com/ozankasikci/go-image-merge"
 )
 
-// main is the entry point of the program.
+// main wires together process lifecycle concerns:
+// command-line parsing, dependency construction, HTTP server startup, and
+// graceful shutdown. In Go, `main` commonly acts as explicit composition root
+// instead of relying on framework magic.
 func main() {
-    // Setup for graceful shutdown
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt)
-
-    // Command line flag parsing
+	// `flag` is Go's standard library option parser. It mutates package-level
+	// state and therefore must be called before values are consumed.
 	port := flag.Uint("p", 8080, "port to listen on")
 	flag.Parse()
 
-    // HTTP server setup
+	// `slog` is the structured logging package introduced in the standard
+	// library. We emit key/value fields to make machine processing easy.
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+
+	// A shared HTTP client is preferred in Go:
+	// - it reuses TCP connections via internal transports
+	// - it centralizes timeout policy
+	// Creating clients per request is an anti-pattern.
+	httpClient := &http.Client{Timeout: 10 * time.Second}
+
+	// Constructor returns `http.Handler` interface instead of concrete type.
+	// Exposing behavior through interfaces is a common Go design style.
+	handler := newStitchHandler(httpClient)
+
+	// `http.ServeMux` in current Go versions supports method-aware patterns like
+	// "GET /path". This avoids custom method checks inside handlers.
 	mux := http.NewServeMux()
-	mux.HandleFunc("/poke-stitch", stitch) // Registering the handler function
+	mux.Handle("GET /poke-stitch", handler)
 
 	address := fmt.Sprintf(":%d", *port)
-	server := &http.Server{Addr: address, Handler: mux}
+	server := &http.Server{
+		Addr:    address,
+		Handler: mux,
+		// Protect against slowloris-style attacks by bounding header read time.
+		ReadHeaderTimeout: 5 * time.Second,
+	}
+
+	// `signal.NotifyContext` derives a context canceled by OS signals.
+	// This avoids manual signal channels and integrates naturally with Go's
+	// context-driven cancellation model.
+	shutdownCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	// `stop` unregisters signal handlers and should always be called.
+	defer stop()
+
+	// Run HTTP serving in a goroutine so main goroutine can block on shutdown.
+	// Goroutines are lightweight user-space threads managed by the runtime.
 	go func() {
-        // Starting the server in a goroutine
-		server.ListenAndServe()
+		logger.Info("starting server", "address", address)
+		// ListenAndServe normally returns `http.ErrServerClosed` on graceful
+		// shutdown. Treat only other errors as fatal.
+		if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+			logger.Error("server failed", "error", err)
+			// Trigger shutdown path if startup/runtime unexpectedly fails.
+			stop()
+		}
 	}()
 
-	<-stop // Waiting for interrupt signal
-	fmt.Println("Stopping the server")
-	server.Shutdown(context.Background()) // Graceful shutdown
-	fmt.Println("We are done")
+	// Block until signal arrives or `stop()` is called due to server failure.
+	<-shutdownCtx.Done()
+
+	// Always bound graceful shutdown time; otherwise buggy handlers may keep
+	// the process alive indefinitely.
+	gracefulTimeoutCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	logger.Info("shutting down server")
+	// Shutdown stops accepting new connections and waits for active requests.
+	if err := server.Shutdown(gracefulTimeoutCtx); err != nil {
+		logger.Error("shutdown failed", "error", err)
+	}
 }
 
-// pokemon struct to unmarshal JSON data from PokeAPI.
+// pokemon matches only the PokeAPI fields this sample uses.
+// Go's JSON decoder ignores unknown fields by default.
 type pokemon struct {
 	Sprites pokemonSprites `json:"sprites"`
 }
 
-// pokemonSprites struct to map the JSON sprite data.
+// pokemonSprites mirrors selected sprite URLs from the API payload.
+// Struct tags map Go field names to snake_case JSON keys.
 type pokemonSprites struct {
-	// Fields for different sprite URLs
 	BackDefault      string `json:"back_default"`
 	BackFemale       string `json:"back_female"`
 	BackShiny        string `json:"back_shiny"`
@@ -65,103 +108,207 @@ type pokemonSprites struct {
 	FrontShinyFemale string `json:"front_shiny_female"`
 }
 
-// stitch is an HTTP handler function for the /poke-stitch endpoint.
-func stitch(w http.ResponseWriter, r *http.Request) {
-    // Extracting query parameter
-	poke := r.URL.Query().Get("pokemon")
-	if len(poke) == 0 {
-		w.WriteHeader(http.StatusBadRequest) // Send bad request status if no pokemon specified
-		return
-	}
-
-    // Fetching data from PokeAPI
-	res, err := http.Get("https://pokeapi.co/api/v2/pokemon/" + poke)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-    // Unmarshaling JSON data into pokemon struct
-	var p pokemon
-	err = json.Unmarshal(body, &p)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-    // Setting up a channel and WaitGroup for concurrent image fetching
-	images := make(chan image.Image, 8)
-	wg := &sync.WaitGroup{}
-	wg.Add(8)
-
-    // Fetching each sprite image concurrently
-	go getImage(p.Sprites.BackDefault, images, wg)
-	go getImage(p.Sprites.BackFemale, images, wg)
-	go getImage(p.Sprites.BackShiny, images, wg)
-	go getImage(p.Sprites.BackShinyFemale, images, wg)
-	go getImage(p.Sprites.FrontDefault, images, wg)
-	go getImage(p.Sprites.FrontFemale, images, wg)
-	go getImage(p.Sprites.FrontShiny, images, wg)
-	go getImage(p.Sprites.FrontShinyFemale, images, wg)
-	
-	wg.Wait() // Waiting for all goroutines to finish
-	close(images) // Closing the channel
-	
-    // Preparing images for merging
-	grids := make([]*gim.Grid, 0)
-	for img := range images {
-		grids = append(grids, &gim.Grid{Image: img})
-	}
-
-    // Merging images
-	rgba, err := gim.New(grids, 2, int(math.Ceil(float64(len(grids))/float64(2)))).Merge()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-    // Encoding the merged image to PNG
-	b := new(bytes.Buffer)
-	wr := bufio.NewWriter(b)
-	err = png.Encode(wr, rgba)
-	wr.Flush()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-    // Setting response headers and sending the image
-	w.Header().Set("Content-Type", "image/png")
-	w.Header().Set("Content-Length", fmt.Sprintf("%d", b.Len()))
-	w.WriteHeader(http.StatusOK)
-	w.Write(b.Bytes())
+// stitchHandler holds request-scoped dependencies.
+// In Go, handlers are often small structs with methods rather than closures.
+type stitchHandler struct {
+	client *http.Client
 }
 
-// getImage fetches an image from a URL and sends it to the provided channel.
-func getImage(url string, out chan<- image.Image, wg *sync.WaitGroup) {
-	defer wg.Done() // Marking this function as done in the WaitGroup upon return
-	if len(url) == 0 {
-		return // If the URL is empty, return immediately
-	}
+// newStitchHandler is a lightweight constructor. Returning `http.Handler`
+// keeps callers decoupled from implementation details.
+func newStitchHandler(client *http.Client) http.Handler {
+	return &stitchHandler{client: client}
+}
 
-    // Fetching the image
-	res, err := http.Get(url)
-	if err != nil {
+// ServeHTTP implements the `http.Handler` interface. Any type with this method
+// can be registered in the router ("interface satisfaction by method set").
+func (h *stitchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Query values are always strings; missing keys produce empty string.
+	pokemonName := r.URL.Query().Get("pokemon")
+	if pokemonName == "" {
+		// `http.Error` writes status + plain text body in one call.
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
-    // Decoding the image
+	// Pass request context downstream so client disconnects and timeouts can
+	// cancel outbound requests automatically.
+	p, err := h.fetchPokemon(r.Context(), pokemonName)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	// Retrieve available sprites concurrently.
+	images, err := h.fetchSprites(r.Context(), p.Sprites.urls())
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	// Defensive checks keep failure mode explicit for malformed upstream data.
+	if len(images) == 0 {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	// Preallocate slice capacity to avoid repeated allocations during append.
+	grids := make([]*gim.Grid, 0, len(images))
+	for _, img := range images {
+		// Keep nil filtering local; merge library expects concrete images.
+		if img != nil {
+			grids = append(grids, &gim.Grid{Image: img})
+		}
+	}
+	if len(grids) == 0 {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	// Integer math trick: ceil(len/2) for two columns.
+	rows := (len(grids) + 1) / 2
+	rgba, err := gim.New(grids, 2, rows).Merge()
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	// Header must be set before first body write.
+	w.Header().Set("Content-Type", "image/png")
+	// Encoding directly to response avoids temporary buffering.
+	if err := png.Encode(w, rgba); err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}
+}
+
+// fetchPokemon requests metadata JSON from PokeAPI and decodes it into `pokemon`.
+// It returns value+error (Go's primary error handling convention).
+func (h *stitchHandler) fetchPokemon(ctx context.Context, pokemonName string) (pokemon, error) {
+	// Request is bound to caller context for cooperative cancellation.
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://pokeapi.co/api/v2/pokemon/"+pokemonName, nil)
+	if err != nil {
+		return pokemon{}, err
+	}
+
+	// `Do` returns a response for any HTTP status; status validation is caller's
+	// responsibility.
+	res, err := h.client.Do(req)
+	if err != nil {
+		return pokemon{}, err
+	}
+	// Always close response body to return connection to pool.
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return pokemon{}, fmt.Errorf("unexpected status from pokeapi: %d", res.StatusCode)
+	}
+
+	var p pokemon
+	// Streaming decoder avoids reading entire body into memory first.
+	if err := json.NewDecoder(res.Body).Decode(&p); err != nil {
+		return pokemon{}, err
+	}
+
+	return p, nil
+}
+
+// fetchSprites downloads sprite images concurrently.
+// We preserve output order by storing each result at its original index.
+func (h *stitchHandler) fetchSprites(ctx context.Context, urls []string) ([]image.Image, error) {
+	// Fixed-length output slice allows lock-free indexed writes from workers.
+	images := make([]image.Image, len(urls))
+
+	// WaitGroup tracks worker completion. `Add` must happen before goroutines
+	// start to avoid race with `Wait`.
+	var wg sync.WaitGroup
+
+	// Capture first error across goroutines.
+	var firstErr error
+	var firstErrMu sync.Mutex
+
+	// Closure serializes first-error assignment.
+	recordErr := func(err error) {
+		if err == nil {
+			return
+		}
+		firstErrMu.Lock()
+		defer firstErrMu.Unlock()
+		if firstErr == nil {
+			firstErr = err
+		}
+	}
+
+	wg.Add(len(urls))
+	for i, url := range urls {
+		// Pass loop variables as parameters. In Go, loop vars are reused each
+		// iteration; explicit parameters avoid accidental capture bugs.
+		go func(index int, spriteURL string) {
+			defer wg.Done()
+			img, err := h.getImage(ctx, spriteURL)
+			if err != nil {
+				recordErr(err)
+				return
+			}
+			// Different goroutines write to distinct indices, which is safe.
+			images[index] = img
+		}(i, url)
+	}
+
+	// Join point: wait until all goroutines complete.
+	wg.Wait()
+
+	if firstErr != nil {
+		return nil, firstErr
+	}
+
+	return images, nil
+}
+
+// getImage performs one HTTP fetch + image decode operation.
+func (h *stitchHandler) getImage(ctx context.Context, url string) (image.Image, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := h.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	// Explicit status handling keeps operational failures visible.
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status from sprite endpoint: %d", res.StatusCode)
+	}
+
+	// `image.Decode` auto-detects registered formats (png/jpeg/gif/etc.).
 	img, _, err := image.Decode(res.Body)
 	if err != nil {
-		return
+		return nil, err
 	}
 
-    // Sending the image to the channel
-	out <- img
+	return img, nil
+}
+
+// urls returns only non-empty sprite URLs in deterministic order.
+// Keeping filtering in one place simplifies caller logic.
+func (s pokemonSprites) urls() []string {
+	all := []string{
+		s.BackDefault,
+		s.BackFemale,
+		s.BackShiny,
+		s.BackShinyFemale,
+		s.FrontDefault,
+		s.FrontFemale,
+		s.FrontShiny,
+		s.FrontShinyFemale,
+	}
+	result := make([]string, 0, len(all))
+	for _, u := range all {
+		if u != "" {
+			result = append(result, u)
+		}
+	}
+	return result
 }

@@ -54,7 +54,7 @@ Non-functional requirements:
 ### Images
 
 * Go has 2D image functionality built in ([`image` package](https://pkg.go.dev/image))
-* To make combining the images easier, consider the package [*go-image-merge*](https://github.com/ozankasikci/go-image-merge). It is a lightweight package making combining images relatively simple. **Note:** In order to get the latest 0.2.3 preview version, run *go get github.com/ozankasikci/go-image-merge@66fdff08137800ab01d23717d10b2a0b663efe17* (where *66fd...* is the latest git commit in the repository at the time of writing this guide). Here is a code sample for how to combine four images with *go-image-merge*:
+* To make combining the images easier, consider the package [*go-image-merge*](https://github.com/ozankasikci/go-image-merge). It is a lightweight package making combining images relatively simple. Add it with `go get github.com/ozankasikci/go-image-merge@latest` and keep your module dependencies tidy with `go mod tidy`. Here is a code sample for how to combine four images with *go-image-merge*:
 
     ```go
     import (

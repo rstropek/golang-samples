@@ -1,6 +1,2 @@
-github.com/ozankasikci/go-image-merge v0.2.3-0.20220620190453-66fdff081378 h1:zDe456QV/YAw3UA104Z5vtcsL4VTSNTIzWII9sIL4nk=
-github.com/ozankasikci/go-image-merge v0.2.3-0.20220620190453-66fdff081378/go.mod h1:NQ2aN0b21buFx3p+5x4dZrKuPSLh2uBukK7F30BrYTo=
-github.com/ozankasikci/go-image-merge v0.3.1 h1:R25/9jeZ2wMaTcPT1ZQI7S8axlcvGkJu0jrUA2TIhSs=
-github.com/ozankasikci/go-image-merge v0.3.1/go.mod h1:NQ2aN0b21buFx3p+5x4dZrKuPSLh2uBukK7F30BrYTo=
 github.com/ozankasikci/go-image-merge v0.3.2-0.20240529055839-229323b3ce31 h1:r0NQQtUIxu6YbaqskRAgMw2HOP4hhJL5js5o3CEJRIY=
 github.com/ozankasikci/go-image-merge v0.3.2-0.20240529055839-229323b3ce31/go.mod h1:NQ2aN0b21buFx3p+5x4dZrKuPSLh2uBukK7F30BrYTo=
